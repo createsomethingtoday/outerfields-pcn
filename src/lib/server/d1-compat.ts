@@ -4,43 +4,52 @@
  * Wraps better-sqlite3 with an API surface matching Cloudflare D1,
  * so all existing .prepare().bind().all/first/run() calls work unchanged.
  */
-import Database from 'better-sqlite3';
-import { readFileSync, existsSync } from 'fs';
+import { readFileSync, existsSync, mkdirSync, readdirSync } from 'fs';
 import { join } from 'path';
 
-let _db: Database.Database | null = null;
+let _db: any = null;
+let _initFailed = false;
 
 /**
  * Get or create the singleton SQLite database connection.
  * On first call, runs all migrations from /migrations.
  */
-function getConnection(): Database.Database {
+function getConnection(): any {
 	if (_db) return _db;
+	if (_initFailed) throw new Error('Database initialization previously failed');
 
-	const dbPath = process.env.DATABASE_PATH || join(process.cwd(), 'data', 'outerfields.db');
+	try {
+		// Dynamic import to avoid Vite bundling issues with native modules
+		const Database = require('better-sqlite3');
 
-	// Ensure the data directory exists
-	const dir = dbPath.substring(0, dbPath.lastIndexOf('/'));
-	if (!existsSync(dir)) {
-		const { mkdirSync } = require('fs');
-		mkdirSync(dir, { recursive: true });
+		const dbPath = process.env.DATABASE_PATH || join(process.cwd(), 'data', 'outerfields.db');
+
+		// Ensure the data directory exists
+		const dir = dbPath.substring(0, dbPath.lastIndexOf('/'));
+		if (!existsSync(dir)) {
+			mkdirSync(dir, { recursive: true });
+		}
+
+		_db = new Database(dbPath);
+
+		// Enable WAL mode for better concurrency
+		_db.pragma('journal_mode = WAL');
+
+		// Run migrations
+		runMigrations(_db);
+
+		return _db;
+	} catch (err) {
+		_initFailed = true;
+		console.error('[d1-compat] Failed to initialize SQLite:', err);
+		throw err;
 	}
-
-	_db = new Database(dbPath);
-
-	// Enable WAL mode for better concurrency
-	_db.pragma('journal_mode = WAL');
-
-	// Run migrations
-	runMigrations(_db);
-
-	return _db;
 }
 
 /**
  * Run all migration files in order
  */
-function runMigrations(db: Database.Database): void {
+function runMigrations(db: any): void {
 	const migrationsDir = join(process.cwd(), 'migrations');
 	if (!existsSync(migrationsDir)) return;
 
@@ -53,7 +62,6 @@ function runMigrations(db: Database.Database): void {
 		)
 	`);
 
-	const { readdirSync } = require('fs');
 	const files: string[] = readdirSync(migrationsDir)
 		.filter((f: string) => f.endsWith('.sql'))
 		.sort();
@@ -84,11 +92,11 @@ function runMigrations(db: Database.Database): void {
  * Supports the .bind().all(), .bind().first(), .bind().run() chain.
  */
 class D1PreparedStatement {
-	private db: Database.Database;
+	private db: any;
 	private sql: string;
 	private params: unknown[] = [];
 
-	constructor(db: Database.Database, sql: string) {
+	constructor(db: any, sql: string) {
 		this.db = db;
 		this.sql = sql;
 	}
@@ -122,7 +130,7 @@ class D1PreparedStatement {
  * Drop-in replacement for Cloudflare D1Database.
  */
 export class D1Compat {
-	private db: Database.Database;
+	private db: any;
 
 	constructor() {
 		this.db = getConnection();
