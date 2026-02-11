@@ -27,11 +27,6 @@
 			name: 'Velocity Health Clinic',
 			description: 'Performance medicine and wellness optimization',
 			comingSoon: true
-		},
-		{
-			id: 'good-life',
-			name: 'Good Life Network',
-			description: 'Lifestyle content and personal development'
 		}
 	];
 
@@ -131,9 +126,12 @@
 
 	.partners-grid {
 		display: grid;
-		grid-template-columns: repeat(3, 1fr);
+		grid-template-columns: repeat(2, 1fr);
 		gap: 2rem;
 		margin-bottom: 3rem;
+		max-width: 48rem;
+		margin-left: auto;
+		margin-right: auto;
 	}
 
 	.partner-card {
@@ -231,7 +229,7 @@
 
 	@media (max-width: 900px) {
 		.partners-grid {
-			grid-template-columns: repeat(2, 1fr);
+			grid-template-columns: 1fr 1fr;
 		}
 	}
 

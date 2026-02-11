@@ -107,7 +107,7 @@
 			<table class="comparison-table">
 				<thead>
 					<tr>
-						<th class="feature-header">Feature</th>
+						<th class="feature-header">Service</th>
 						<th class="brand-header outerfields">
 							<span class="brand-icon">
 								<Infinity size={20} />
@@ -198,13 +198,15 @@
 			</table>
 		</div>
 
-		<div class="capabilities-section">
-			<h3 class="capabilities-title">What You Get With OUTERFIELDS</h3>
-			<div class="capabilities-grid">
+		<div class="services-section">
+			<h3 class="services-title">What You Get With OUTERFIELDS</h3>
+			<div class="services-grid">
 				{#each capabilities as cap}
-					<div class="capability-item">
-						<CheckCircle size={18} />
-						<span>{cap}</span>
+					<div class="service-card">
+						<div class="service-icon">
+							<CheckCircle size={20} />
+						</div>
+						<span class="service-label">{cap}</span>
 					</div>
 				{/each}
 			</div>
@@ -419,44 +421,69 @@
 		transform: scale(1.02);
 	}
 
-	.capabilities-section {
+	.services-section {
 		margin-top: 3rem;
-		padding: 2rem;
-		background: var(--color-bg-surface);
-		border: 1px solid var(--color-border-default);
-		border-radius: 1rem;
 	}
 
-	.capabilities-title {
-		font-size: 1.25rem;
+	.services-title {
+		font-size: 1.5rem;
 		font-weight: 700;
 		color: var(--color-fg-primary);
 		margin: 0 0 1.5rem;
 		text-align: center;
 	}
 
-	.capabilities-grid {
+	.services-grid {
 		display: grid;
-		grid-template-columns: repeat(2, 1fr);
-		gap: 1rem 2rem;
+		grid-template-columns: repeat(5, 1fr);
+		gap: 1rem;
 	}
 
-	.capability-item {
+	.service-card {
 		display: flex;
+		flex-direction: column;
 		align-items: center;
 		gap: 0.75rem;
-		font-size: 0.9375rem;
-		color: var(--color-fg-secondary);
+		padding: 1.5rem 1rem;
+		background: var(--color-bg-surface);
+		border: 1px solid var(--color-border-default);
+		border-radius: 0.75rem;
+		text-align: center;
+		transition: all var(--duration-micro) var(--ease-standard);
 	}
 
-	.capability-item :global(svg) {
+	.service-card:hover {
+		border-color: var(--color-sun);
+		background: var(--color-bg-surface-hover);
+	}
+
+	.service-icon {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 2.5rem;
+		height: 2.5rem;
+		background: var(--color-primary-muted);
+		border-radius: 0.5rem;
 		color: var(--color-sun);
-		flex-shrink: 0;
+	}
+
+	.service-label {
+		font-size: 0.875rem;
+		font-weight: 500;
+		color: var(--color-fg-secondary);
+		line-height: 1.4;
+	}
+
+	@media (max-width: 900px) {
+		.services-grid {
+			grid-template-columns: repeat(3, 1fr);
+		}
 	}
 
 	@media (max-width: 640px) {
-		.capabilities-grid {
-			grid-template-columns: 1fr;
+		.services-grid {
+			grid-template-columns: repeat(2, 1fr);
 		}
 	}
 

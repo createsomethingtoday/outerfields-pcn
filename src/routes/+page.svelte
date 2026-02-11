@@ -8,9 +8,10 @@
 	import HeroSection from '$lib/components/HeroSection.svelte';
 	import JourneySection from '$lib/components/JourneySection.svelte';
 	import ContentCategories from '$lib/components/ContentCategories.svelte';
-	import InsightsAnalytics from '$lib/components/InsightsAnalytics.svelte';
-	import ComponentLab from '$lib/components/ComponentLab.svelte';
 	import PCNPartners from '$lib/components/PCNPartners.svelte';
+	import Testimonials from '$lib/components/Testimonials.svelte';
+	import ComponentLab from '$lib/components/ComponentLab.svelte';
+	import InsightsAnalytics from '$lib/components/InsightsAnalytics.svelte';
 	import FeatureComparison from '$lib/components/FeatureComparison.svelte';
 	import Pricing from '$lib/components/Pricing.svelte';
 	import VideoModal from '$lib/components/VideoModal.svelte';
@@ -196,19 +197,22 @@
 	<!-- 3. The Outerfields Network - Content showcase -->
 	<ContentCategories />
 
-	<!-- 4. Comprehensive Insights - Merged analytics dashboard + AI chat -->
-	<InsightsAnalytics forceUnlocked />
-
-	<!-- 5. What's Included - Platform tools and features -->
-	<ComponentLab />
-
-	<!-- 6. PCN Partners - Social proof -->
+	<!-- 4. PCN Partners - Social proof -->
 	<PCNPartners />
 
-	<!-- 7. Stop Renting. Start Owning. - Competitive comparison -->
+	<!-- 5. Client Reviews -->
+	<Testimonials />
+
+	<!-- 6. What's Included - Platform tools and features -->
+	<ComponentLab />
+
+	<!-- 7. Comprehensive Insights - Merged analytics dashboard + AI chat -->
+	<InsightsAnalytics forceUnlocked />
+
+	<!-- 8. Stop Renting. Start Owning. - Competitive comparison -->
 	<FeatureComparison />
 
-	<!-- 8. Investment - Pricing & CTA -->
+	<!-- 9. Investment - Pricing & CTA -->
 	<Pricing />
 </main>
 

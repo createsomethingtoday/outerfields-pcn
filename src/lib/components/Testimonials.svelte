@@ -1,131 +1,103 @@
 <script lang="ts">
 	/**
-	 * OUTERFIELDS Testimonials
+	 * OUTERFIELDS Client Reviews
 	 *
-	 * Creator success stories and quotes
+	 * Real testimonials from PCN partners and clients.
 	 */
 	import { Quote } from 'lucide-svelte';
 
-	interface Testimonial {
+	interface Review {
+		id: string;
 		quote: string;
-		author: string;
-		role: string;
-		avatar: string;
-		revenue?: string;
-		subscribers?: string;
+		name: string;
+		organization: string;
+		placeholder?: boolean;
 	}
 
-	const testimonials: Testimonial[] = [
+	const reviews: Review[] = [
 		{
-			quote:
-				"OUTERFIELDS transformed how I connect with my audience. The analytics alone helped me double my engagement in three months.",
-			author: 'Sarah Chen',
-			role: 'Photography Educator',
-			avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=80&h=80&fit=crop&crop=face',
-			revenue: '$45K/mo',
-			subscribers: '12.4K'
+			id: 'gotv',
+			quote: 'Outerfields is like the Greg Popovich of production.',
+			name: 'Guns Out TV',
+			organization: 'GOTV'
 		},
 		{
-			quote:
-				"Moving from Uscreen was the best decision. The customization options and community features are leagues ahead.",
-			author: 'Marcus Thompson',
-			role: 'Fitness Creator',
-			avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&h=80&fit=crop&crop=face',
-			revenue: '$78K/mo',
-			subscribers: '34.2K'
-		},
-		{
-			quote:
-				"The Netflix-style interface made my members feel like they were using a premium platform. Worth every penny.",
-			author: 'Elena Rodriguez',
-			role: 'Cooking Channel',
-			avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=80&h=80&fit=crop&crop=face',
-			revenue: '$23K/mo',
-			subscribers: '8.7K'
+			id: 'rr-therapy',
+			quote: 'Review coming soon.',
+			name: 'Reconnecting Relationships',
+			organization: 'Reconnecting Relationships Therapy',
+			placeholder: true
 		}
 	];
 </script>
 
-<section class="testimonials-section">
-	<div class="testimonials-container">
+<section class="reviews-section" id="reviews">
+	<div class="reviews-container">
 		<div class="section-header">
-			<span class="section-badge">Success Stories</span>
-			<h2 class="section-title">Creators Love OUTERFIELDS</h2>
+			<span class="section-badge">
+				<Quote size={12} />
+				Client Reviews
+			</span>
+			<h2 class="section-title">What Our Partners Say</h2>
 			<p class="section-description">
-				Join thousands of creators who've transformed their content businesses with our platform.
+				Hear from the creators and brands building with Outerfields.
 			</p>
 		</div>
 
-		<div class="testimonials-grid highlight-grid">
-			{#each testimonials as testimonial, index}
-				<article class="testimonial-card highlight-item" style="--index: {index}">
+		<div class="reviews-grid">
+			{#each reviews as review}
+				<div class="review-card" class:placeholder={review.placeholder}>
 					<div class="quote-icon">
-						<Quote size={32} />
+						<Quote size={28} />
 					</div>
-					<blockquote class="testimonial-quote">
-						"{testimonial.quote}"
-					</blockquote>
-					<div class="testimonial-footer">
-						<div class="author-info">
-							<img
-								src={testimonial.avatar}
-								alt={testimonial.author}
-								class="author-avatar"
-								loading="lazy"
-							/>
-							<div class="author-details">
-								<span class="author-name">{testimonial.author}</span>
-								<span class="author-role">{testimonial.role}</span>
-							</div>
-						</div>
-						{#if testimonial.revenue || testimonial.subscribers}
-							<div class="author-stats">
-								{#if testimonial.revenue}
-									<span class="stat">
-										<span class="stat-value">{testimonial.revenue}</span>
-										<span class="stat-label">Revenue</span>
-									</span>
-								{/if}
-								{#if testimonial.subscribers}
-									<span class="stat">
-										<span class="stat-value">{testimonial.subscribers}</span>
-										<span class="stat-label">Subscribers</span>
-									</span>
-								{/if}
-							</div>
+					<blockquote class="review-quote">
+						{#if review.placeholder}
+							<em>{review.quote}</em>
+						{:else}
+							"{review.quote}"
 						{/if}
+					</blockquote>
+					<div class="review-attribution">
+						<div class="review-avatar">
+							{review.name.charAt(0)}
+						</div>
+						<div class="review-info">
+							<p class="review-name">{review.name}</p>
+							<p class="review-org">{review.organization}</p>
+						</div>
 					</div>
-				</article>
+				</div>
 			{/each}
 		</div>
 	</div>
 </section>
 
 <style>
-	.testimonials-section {
+	.reviews-section {
 		padding: 6rem 1.5rem;
-		background: var(--color-bg-pure);
 	}
 
-	.testimonials-container {
+	.reviews-container {
 		max-width: var(--container-max-width);
 		margin: 0 auto;
 	}
 
 	.section-header {
 		text-align: center;
-		margin-bottom: 4rem;
+		margin-bottom: 3rem;
 	}
 
 	.section-badge {
-		display: inline-block;
+		display: inline-flex;
+		align-items: center;
+		gap: 0.375rem;
 		padding: 0.375rem 0.75rem;
-		background: var(--color-bg-surface);
-		border: 1px solid var(--color-border-default);
+		background: var(--color-primary-muted);
+		border: 1px solid rgba(244, 81, 38, 0.3);
 		border-radius: 9999px;
 		font-size: 0.75rem;
 		font-weight: 600;
-		color: var(--color-fg-secondary);
+		color: var(--color-sun);
 		text-transform: uppercase;
 		letter-spacing: 0.05em;
 		margin-bottom: 1rem;
@@ -140,124 +112,103 @@
 
 	.section-description {
 		font-size: 1.125rem;
-		color: var(--color-fg-muted);
+		color: var(--color-slate);
 		max-width: 36rem;
 		margin: 0 auto;
-		line-height: 1.7;
+		line-height: 1.6;
 	}
 
-	.testimonials-grid {
+	.reviews-grid {
 		display: grid;
-		grid-template-columns: repeat(3, 1fr);
-		gap: 1.5rem;
+		grid-template-columns: repeat(2, 1fr);
+		gap: 2rem;
+		max-width: 52rem;
+		margin: 0 auto;
 	}
 
-	.testimonial-card {
-		position: relative;
-		padding: 2rem;
-		background: var(--glass-bg);
+	.review-card {
+		padding: 2.5rem;
+		background: var(--color-bg-surface);
 		border: 1px solid var(--color-border-default);
 		border-radius: 1rem;
-		transition: all var(--duration-standard) var(--ease-standard),
-			opacity var(--duration-standard) var(--ease-standard),
-			transform var(--duration-micro) var(--ease-standard);
-		transition-delay: calc(var(--cascade-step, 50ms) * var(--index, 0));
+		transition: border-color var(--duration-micro) var(--ease-standard);
 	}
 
-	.testimonial-card:hover {
-		border-color: var(--color-border-strong);
-		transform: translateY(-4px) scale(var(--scale-micro, 1.02));
-		box-shadow: 0 20px 40px -15px rgba(255, 255, 255, 0.1);
-		opacity: 1 !important; /* Override highlight-grid opacity dimming */
+	.review-card:hover {
+		border-color: var(--color-sun);
+	}
+
+	.review-card.placeholder {
+		opacity: 0.6;
+		border-style: dashed;
 	}
 
 	.quote-icon {
-		position: absolute;
-		top: 1rem;
-		right: 1rem;
-		color: var(--color-fg-secondary);
-		opacity: 0.3;
+		color: var(--color-sun);
+		margin-bottom: 1.25rem;
+		opacity: 0.6;
 	}
 
-
-	.testimonial-quote {
-		font-size: 1rem;
-		line-height: 1.7;
-		color: var(--color-fg-secondary);
+	.review-quote {
+		font-size: 1.25rem;
+		font-weight: 500;
+		color: var(--color-fg-primary);
+		line-height: 1.5;
 		margin: 0 0 1.5rem;
-		font-style: italic;
 	}
 
-	.testimonial-footer {
-		display: flex;
-		flex-direction: column;
-		gap: 1rem;
-	}
-
-	.author-info {
+	.review-attribution {
 		display: flex;
 		align-items: center;
 		gap: 0.75rem;
 	}
 
-	.author-avatar {
-		width: 3rem;
-		height: 3rem;
+	.review-avatar {
+		width: 2.75rem;
+		height: 2.75rem;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: var(--color-primary-muted);
 		border-radius: 50%;
-		object-fit: cover;
-		border: 2px solid var(--color-border-default);
+		font-size: 1.125rem;
+		font-weight: 700;
+		color: var(--color-sun);
 	}
 
-	.author-details {
+	.review-info {
 		display: flex;
 		flex-direction: column;
 	}
 
-	.author-name {
-		font-size: 0.875rem;
+	.review-name {
+		font-size: 1rem;
 		font-weight: 600;
 		color: var(--color-fg-primary);
+		margin: 0;
 	}
 
-	.author-role {
-		font-size: 0.75rem;
-		color: var(--color-fg-subtle);
-	}
-
-	.author-stats {
-		display: flex;
-		gap: 1.5rem;
-		padding-top: 1rem;
-		border-top: 1px solid var(--color-border-default);
-	}
-
-	.stat {
-		display: flex;
-		flex-direction: column;
-	}
-
-	.stat-value {
+	.review-org {
 		font-size: 0.875rem;
-		font-weight: 700;
-		color: var(--color-fg-primary);
-	}
-
-	.stat-label {
-		font-size: 0.625rem;
-		color: var(--color-fg-subtle);
-		text-transform: uppercase;
-		letter-spacing: 0.05em;
-	}
-
-	@media (max-width: 1024px) {
-		.testimonials-grid {
-			grid-template-columns: repeat(2, 1fr);
-		}
+		color: var(--color-slate);
+		margin: 0;
 	}
 
 	@media (max-width: 640px) {
-		.testimonials-grid {
+		.reviews-section {
+			padding: 4rem 1rem;
+		}
+
+		.reviews-grid {
 			grid-template-columns: 1fr;
+		}
+
+		.review-card {
+			padding: 1.75rem;
+		}
+
+		.review-quote {
+			font-size: 1.125rem;
 		}
 	}
 </style>
