@@ -4,13 +4,10 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { rollbackChange, getActiveChanges } from '$lib/server/proposals';
+import { getDB } from '$lib/server/d1-compat';
 
-export const POST: RequestHandler = async ({ params, request, platform, locals }) => {
-  const db = platform?.env?.DB;
-  
-  if (!db) {
-    return json({ error: 'Database not available' }, { status: 503 });
-  }
+export const POST: RequestHandler = async ({ params, request, locals }) => {
+  const db = getDB();
   
   const { id } = params;  // This is the proposal ID
   const rolledBackBy = locals.user?.email || 'anonymous';

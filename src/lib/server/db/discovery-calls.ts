@@ -1,4 +1,4 @@
-import type { D1Database } from '@cloudflare/workers-types';
+import type { D1Compat } from '$lib/server/d1-compat';
 
 export interface DiscoveryCall {
 	id: string;
@@ -13,12 +13,12 @@ export interface DiscoveryCall {
  * Create a new discovery call record
  */
 export async function createDiscoveryCall(
-	db: D1Database,
+	db: D1Compat,
 	userId: string,
 	callTime: string,
 	calendlyEventId: string
 ): Promise<void> {
-	await db
+	db
 		.prepare(
 			`INSERT INTO discovery_calls (id, user_id, call_time, calendly_event_id, status, created_at)
        VALUES (?, ?, ?, ?, 'scheduled', datetime('now'))`
@@ -31,11 +31,11 @@ export async function createDiscoveryCall(
  * Update discovery call status
  */
 export async function updateDiscoveryCallStatus(
-	db: D1Database,
+	db: D1Compat,
 	calendlyEventId: string,
 	status: DiscoveryCall['status']
 ): Promise<void> {
-	await db
+	db
 		.prepare(`UPDATE discovery_calls SET status = ? WHERE calendly_event_id = ?`)
 		.bind(status, calendlyEventId)
 		.run();
@@ -44,8 +44,8 @@ export async function updateDiscoveryCallStatus(
 /**
  * Get all discovery calls (for admin dashboard)
  */
-export async function getAllDiscoveryCalls(db: D1Database): Promise<DiscoveryCall[]> {
-	const result = await db.prepare(`SELECT * FROM discovery_calls ORDER BY call_time DESC`).all();
+export async function getAllDiscoveryCalls(db: D1Compat): Promise<DiscoveryCall[]> {
+	const result = db.prepare(`SELECT * FROM discovery_calls ORDER BY call_time DESC`).all();
 	return (result.results as unknown) as DiscoveryCall[];
 }
 
@@ -53,10 +53,10 @@ export async function getAllDiscoveryCalls(db: D1Database): Promise<DiscoveryCal
  * Get discovery calls for a specific user
  */
 export async function getUserDiscoveryCalls(
-	db: D1Database,
+	db: D1Compat,
 	userId: string
 ): Promise<DiscoveryCall[]> {
-	const result = await db
+	const result = db
 		.prepare(`SELECT * FROM discovery_calls WHERE user_id = ? ORDER BY call_time DESC`)
 		.bind(userId)
 		.all();

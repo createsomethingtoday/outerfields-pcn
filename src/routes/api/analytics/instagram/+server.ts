@@ -6,7 +6,7 @@
  */
 import { json, type RequestHandler } from '@sveltejs/kit';
 
-export const GET: RequestHandler = async ({ platform }) => {
+export const GET: RequestHandler = async () => {
 	try {
 		// In production, would use actual Instagram Graph API
 		// const INSTAGRAM_ACCESS_TOKEN = platform?.env.INSTAGRAM_ACCESS_TOKEN;

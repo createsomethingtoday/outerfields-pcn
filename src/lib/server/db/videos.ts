@@ -1,4 +1,4 @@
-import type { D1Database } from '@cloudflare/workers-types';
+import type { D1Compat } from '$lib/server/d1-compat';
 
 export interface Video {
 	id: string;
@@ -23,7 +23,7 @@ export interface VideosResponse {
  * Get all videos, optionally filtered by category
  */
 export async function getVideos(
-	db: D1Database,
+	db: D1Compat,
 	category?: string
 ): Promise<VideosResponse> {
 	let query = 'SELECT * FROM videos';
@@ -36,7 +36,7 @@ export async function getVideos(
 
 	query += ' ORDER BY category, episode_number NULLS LAST, created_at';
 
-	const result = await db.prepare(query).bind(...params).all<Video>();
+	const result = db.prepare(query).bind(...params).all<Video>();
 
 	return {
 		videos: result.results || [],
@@ -47,7 +47,7 @@ export async function getVideos(
 /**
  * Get videos grouped by category
  */
-export async function getVideosByCategory(db: D1Database): Promise<Record<string, Video[]>> {
+export async function getVideosByCategory(db: D1Compat): Promise<Record<string, Video[]>> {
 	const { videos } = await getVideos(db);
 
 	const grouped: Record<string, Video[]> = {};
@@ -65,8 +65,8 @@ export async function getVideosByCategory(db: D1Database): Promise<Record<string
 /**
  * Get a single video by ID
  */
-export async function getVideoById(db: D1Database, id: string): Promise<Video | null> {
-	const result = await db.prepare('SELECT * FROM videos WHERE id = ?').bind(id).first<Video>();
+export async function getVideoById(db: D1Compat, id: string): Promise<Video | null> {
+	const result = db.prepare('SELECT * FROM videos WHERE id = ?').bind(id).first<Video>();
 
 	return result || null;
 }
@@ -75,10 +75,10 @@ export async function getVideoById(db: D1Database, id: string): Promise<Video | 
  * Get videos by tier (free, preview, gated)
  */
 export async function getVideosByTier(
-	db: D1Database,
+	db: D1Compat,
 	tier: 'free' | 'preview' | 'gated'
 ): Promise<VideosResponse> {
-	const result = await db
+	const result = db
 		.prepare('SELECT * FROM videos WHERE tier = ? ORDER BY category, episode_number NULLS LAST')
 		.bind(tier)
 		.all<Video>();
@@ -92,15 +92,15 @@ export async function getVideosByTier(
 /**
  * Get free videos (first episodes + trailers)
  */
-export async function getFreeVideos(db: D1Database): Promise<VideosResponse> {
+export async function getFreeVideos(db: D1Compat): Promise<VideosResponse> {
 	return getVideosByTier(db, 'free');
 }
 
 /**
  * Search videos by title
  */
-export async function searchVideos(db: D1Database, query: string): Promise<VideosResponse> {
-	const result = await db
+export async function searchVideos(db: D1Compat, query: string): Promise<VideosResponse> {
+	const result = db
 		.prepare('SELECT * FROM videos WHERE title LIKE ? ORDER BY category, episode_number NULLS LAST')
 		.bind(`%${query}%`)
 		.all<Video>();

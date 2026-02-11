@@ -1,7 +1,7 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 
-export const POST: RequestHandler = async ({ request, platform }) => {
+export const POST: RequestHandler = async ({ request }) => {
 	try {
 		const { message, videoAnalytics } = await request.json();
 
@@ -9,7 +9,7 @@ export const POST: RequestHandler = async ({ request, platform }) => {
 			return json({ error: 'Message is required' }, { status: 400 });
 		}
 
-		const ai = platform?.env?.AI;
+		const ai = null;
 		if (!ai) {
 			return json({ error: 'AI service not available' }, { status: 503 });
 		}

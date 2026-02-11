@@ -11,6 +11,7 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import type { UserEvent, EventType, StoredEvent } from '$lib/types/events';
+import { getDB } from '$lib/server/d1-compat';
 
 /**
  * Valid event types (for validation)
@@ -39,13 +40,8 @@ function generateEventId(): string {
  * 
  * Track a single user event or batch of events
  */
-export const POST: RequestHandler = async ({ request, platform, locals }) => {
-  const db = platform?.env?.DB;
-  
-  if (!db) {
-    // Silently fail in development - events are optional
-    return json({ success: true, stored: false, reason: 'no_database' });
-  }
+export const POST: RequestHandler = async ({ request, locals }) => {
+  const db = getDB();
   
   let body: UserEvent | UserEvent[];
   
@@ -140,12 +136,8 @@ export const POST: RequestHandler = async ({ request, platform, locals }) => {
  * 
  * Retrieve recent events (admin only)
  */
-export const GET: RequestHandler = async ({ url, platform, locals }) => {
-  const db = platform?.env?.DB;
-  
-  if (!db) {
-    return json({ events: [], total: 0 });
-  }
+export const GET: RequestHandler = async ({ url, locals }) => {
+  const db = getDB();
   
   // Check if user is admin (you'd implement proper admin check here)
   // For now, just allow access for debugging

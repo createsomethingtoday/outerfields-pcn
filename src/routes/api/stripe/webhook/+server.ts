@@ -3,26 +3,19 @@ import { json, error } from '@sveltejs/kit';
 import Stripe from 'stripe';
 import { Resend } from 'resend';
 import { generateWelcomeEmail } from '$lib/email/welcome-template';
-import { createPersistentLogger, createLogger, type Logger } from '@create-something/canon/utils';
+import { getDB } from '$lib/server/d1-compat';
+import { env } from '$lib/server/env';
+
+const logger = { info: console.log, warn: console.warn, error: console.error, debug: console.debug };
 
 /**
  * POST /api/stripe/webhook
  * Handles Stripe webhook events, particularly checkout.session.completed
  * to grant lifetime membership access
  */
-export const POST: RequestHandler = async ({ request, platform }) => {
-	// Create persistent logger for agent-queryable error tracking
-	const logger: Logger = platform?.env?.DB
-		? createPersistentLogger('OuterfieldsStripeWebhook', {
-				db: platform.env.DB,
-				minPersistLevel: 'warn'
-			}, {
-				path: '/api/stripe/webhook',
-				method: 'POST'
-			})
-		: createLogger('OuterfieldsStripeWebhook');
-	const stripeKey = platform?.env?.STRIPE_SECRET_KEY;
-	const webhookSecret = platform?.env?.STRIPE_WEBHOOK_SECRET;
+export const POST: RequestHandler = async ({ request }) => {
+	const stripeKey = env('STRIPE_SECRET_KEY');
+	const webhookSecret = env('STRIPE_WEBHOOK_SECRET');
 
 	if (!stripeKey || !webhookSecret) {
 		logger.error('Stripe not configured');
@@ -76,11 +69,7 @@ export const POST: RequestHandler = async ({ request, platform }) => {
 				}
 
 				// Update user membership in D1
-				const db = platform?.env.DB;
-				if (!db) {
-					logger.error('Database not available');
-					break;
-				}
+				const db = getDB();
 
 				await db
 					.prepare('UPDATE users SET membership = 1 WHERE id = ?')
@@ -91,7 +80,7 @@ export const POST: RequestHandler = async ({ request, platform }) => {
 
 				// Send welcome email with Calendly link for discovery call
 				try {
-					const resendApiKey = platform?.env?.RESEND_API_KEY;
+					const resendApiKey = env('RESEND_API_KEY');
 					if (!resendApiKey) {
 						logger.warn('RESEND_API_KEY not configured - skipping welcome email');
 						break;

@@ -1,5 +1,6 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
+import { getDB } from '$lib/server/d1-compat';
 import {
 	getVideoComments,
 	getCommentCount,
@@ -12,12 +13,8 @@ import {
  * GET /api/videos/[id]/comments
  * Returns comments for a video with user info and nested replies
  */
-export const GET: RequestHandler = async ({ params, platform, url }) => {
-	const db = platform?.env.DB;
-
-	if (!db) {
-		return json({ success: false, error: 'Database not available' }, { status: 500 });
-	}
+export const GET: RequestHandler = async ({ params, url }) => {
+	const db = getDB();
 
 	const { id: videoId } = params;
 	const limit = parseInt(url.searchParams.get('limit') ?? '50');
@@ -48,12 +45,8 @@ export const GET: RequestHandler = async ({ params, platform, url }) => {
  * POST /api/videos/[id]/comments
  * Create a new comment (requires authentication)
  */
-export const POST: RequestHandler = async ({ params, platform, request, locals }) => {
-	const db = platform?.env.DB;
-
-	if (!db) {
-		return json({ success: false, error: 'Database not available' }, { status: 500 });
-	}
+export const POST: RequestHandler = async ({ params, request, locals }) => {
+	const db = getDB();
 
 	const { id: videoId } = params;
 
@@ -104,12 +97,8 @@ export const POST: RequestHandler = async ({ params, platform, request, locals }
  * PATCH /api/videos/[id]/comments
  * Update an existing comment (owner only)
  */
-export const PATCH: RequestHandler = async ({ params, platform, request, locals }) => {
-	const db = platform?.env.DB;
-
-	if (!db) {
-		return json({ success: false, error: 'Database not available' }, { status: 500 });
-	}
+export const PATCH: RequestHandler = async ({ params, request, locals }) => {
+	const db = getDB();
 
 	// Check authentication
 	const user = locals.user;
@@ -150,12 +139,8 @@ export const PATCH: RequestHandler = async ({ params, platform, request, locals 
  * DELETE /api/videos/[id]/comments
  * Delete a comment (owner only)
  */
-export const DELETE: RequestHandler = async ({ platform, request, locals }) => {
-	const db = platform?.env.DB;
-
-	if (!db) {
-		return json({ success: false, error: 'Database not available' }, { status: 500 });
-	}
+export const DELETE: RequestHandler = async ({ request, locals }) => {
+	const db = getDB();
 
 	// Check authentication
 	const user = locals.user;

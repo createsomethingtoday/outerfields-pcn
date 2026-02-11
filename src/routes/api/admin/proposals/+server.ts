@@ -6,18 +6,15 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { getPendingProposals, createProposal } from '$lib/server/proposals';
+import { getDB } from '$lib/server/d1-compat';
 
 /**
  * GET /api/admin/proposals
  * 
  * List proposals (with optional filters)
  */
-export const GET: RequestHandler = async ({ url, platform, locals }) => {
-  const db = platform?.env?.DB;
-  
-  if (!db) {
-    return json({ proposals: [], total: 0, error: 'Database not available' });
-  }
+export const GET: RequestHandler = async ({ url, locals }) => {
+  const db = getDB();
   
   // TODO: Add proper admin auth check
   // if (!locals.user?.isAdmin) {
@@ -56,12 +53,8 @@ export const GET: RequestHandler = async ({ url, platform, locals }) => {
  * 
  * Create a new proposal (for testing/manual creation)
  */
-export const POST: RequestHandler = async ({ request, platform }) => {
-  const db = platform?.env?.DB;
-  
-  if (!db) {
-    return json({ error: 'Database not available' }, { status: 503 });
-  }
+export const POST: RequestHandler = async ({ request }) => {
+  const db = getDB();
   
   try {
     const proposal = await request.json();

@@ -6,6 +6,7 @@
  */
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
+import { getDB } from '$lib/server/d1-compat';
 
 interface PatternAnalysisRequest {
   type: 'engagement' | 'error' | 'navigation' | 'search' | 'bottleneck';
@@ -18,13 +19,9 @@ interface PatternAnalysisRequest {
  * 
  * Run pattern analysis on collected events
  */
-export const POST: RequestHandler = async ({ request, platform }) => {
-  const db = platform?.env?.DB;
-  const ai = platform?.env?.AI;
-  
-  if (!db) {
-    return json({ error: 'Database not available' }, { status: 503 });
-  }
+export const POST: RequestHandler = async ({ request }) => {
+  const db = getDB();
+  const ai = null; // Workers AI not available on Node/Replit
   
   let body: PatternAnalysisRequest;
   try {

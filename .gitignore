@@ -8,3 +8,5 @@ build
 .DS_Store
 .wrangler
 tmp.json
+data/
+package-lock.json

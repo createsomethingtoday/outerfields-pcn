@@ -5,7 +5,7 @@
  * Supports both agent and human actors.
  */
 
-import type { D1Database } from '@cloudflare/workers-types';
+import type { D1Compat } from '$lib/server/d1-compat';
 import type { AuditEntry } from '$lib/types/proposals';
 
 /**
@@ -19,13 +19,13 @@ function generateAuditId(): string {
  * Log an audit entry
  */
 export async function logAudit(
-  db: D1Database,
+  db: D1Compat,
   entry: Omit<AuditEntry, 'id' | 'createdAt'>
 ): Promise<string> {
   const id = generateAuditId();
   const createdAt = Date.now();
   
-  await db.prepare(`
+  db.prepare(`
     INSERT INTO audit_log (
       id, actor_type, actor_id, action,
       target_type, target_id, details,
@@ -55,12 +55,12 @@ export async function logAudit(
  * Get audit entries for a target
  */
 export async function getAuditForTarget(
-  db: D1Database,
+  db: D1Compat,
   targetType: string,
   targetId: string,
   limit: number = 50
 ): Promise<AuditEntry[]> {
-  const result = await db.prepare(`
+  const result = db.prepare(`
     SELECT * FROM audit_log
     WHERE target_type = ? AND target_id = ?
     ORDER BY created_at DESC
@@ -74,7 +74,7 @@ export async function getAuditForTarget(
  * Get recent audit entries
  */
 export async function getRecentAudit(
-  db: D1Database,
+  db: D1Compat,
   options: {
     limit?: number;
     actorType?: 'agent' | 'human' | 'system';
@@ -105,7 +105,7 @@ export async function getRecentAudit(
   query += ' ORDER BY created_at DESC LIMIT ?';
   params.push(limit);
   
-  const result = await db.prepare(query).bind(...params).all();
+  const result = db.prepare(query).bind(...params).all();
   
   return (result.results || []).map(parseAuditRow);
 }
@@ -114,7 +114,7 @@ export async function getRecentAudit(
  * Get audit summary for a time period
  */
 export async function getAuditSummary(
-  db: D1Database,
+  db: D1Compat,
   since: number
 ): Promise<{
   totalActions: number;
@@ -122,26 +122,22 @@ export async function getAuditSummary(
   byAction: Record<string, number>;
   proposals: { created: number; approved: number; rejected: number; applied: number; rolledBack: number };
 }> {
-  const [
-    totalResult,
-    byActorResult,
-    byActionResult
-  ] = await Promise.all([
-    db.prepare('SELECT COUNT(*) as count FROM audit_log WHERE created_at >= ?')
-      .bind(since).first<{ count: number }>(),
-    db.prepare(`
-      SELECT actor_type, COUNT(*) as count 
-      FROM audit_log 
-      WHERE created_at >= ? 
-      GROUP BY actor_type
-    `).bind(since).all<{ actor_type: string; count: number }>(),
-    db.prepare(`
-      SELECT action, COUNT(*) as count 
-      FROM audit_log 
-      WHERE created_at >= ? 
-      GROUP BY action
-    `).bind(since).all<{ action: string; count: number }>()
-  ]);
+  const totalResult = db.prepare('SELECT COUNT(*) as count FROM audit_log WHERE created_at >= ?')
+    .bind(since).first<{ count: number }>();
+  
+  const byActorResult = db.prepare(`
+    SELECT actor_type, COUNT(*) as count 
+    FROM audit_log 
+    WHERE created_at >= ? 
+    GROUP BY actor_type
+  `).bind(since).all<{ actor_type: string; count: number }>();
+  
+  const byActionResult = db.prepare(`
+    SELECT action, COUNT(*) as count 
+    FROM audit_log 
+    WHERE created_at >= ? 
+    GROUP BY action
+  `).bind(since).all<{ action: string; count: number }>();
   
   const byActor: Record<string, number> = {};
   for (const row of byActorResult.results || []) {

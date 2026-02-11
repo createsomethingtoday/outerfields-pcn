@@ -1,6 +1,7 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import Anthropic from '@anthropic-ai/sdk';
+import { env } from '$lib/server/env';
 
 interface VideoAnalytics {
 	title?: string;
@@ -31,7 +32,7 @@ Guidelines:
 - Keep responses concise (2-3 paragraphs max)
 - Sound like a knowledgeable friend, not a corporate report`;
 
-export const POST: RequestHandler = async ({ request, platform }) => {
+export const POST: RequestHandler = async ({ request }) => {
 	try {
 		const { message, videoAnalytics } = await request.json() as {
 			message: string;
@@ -42,7 +43,7 @@ export const POST: RequestHandler = async ({ request, platform }) => {
 			return json({ error: 'Message is required', success: false }, { status: 400 });
 		}
 
-		const apiKey = platform?.env?.ANTHROPIC_API_KEY;
+		const apiKey = env('ANTHROPIC_API_KEY');
 		if (!apiKey) {
 			// Fallback to demo response if no API key configured
 			return json({

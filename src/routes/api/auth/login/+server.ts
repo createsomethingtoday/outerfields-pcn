@@ -1,5 +1,7 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
+import { getDB } from '$lib/server/d1-compat';
+import { getSessions } from '$lib/server/kv-compat';
 
 // Simple password hashing for demo (in production use bcrypt)
 async function hashPassword(password: string): Promise<string> {
@@ -15,7 +17,7 @@ async function verifyPassword(password: string, hash: string): Promise<boolean> 
 	return passwordHash === hash;
 }
 
-export const POST: RequestHandler = async ({ request, cookies, platform }) => {
+export const POST: RequestHandler = async ({ request, cookies }) => {
 	try {
 		const body = await request.json();
 		const { email, password } = body;
@@ -24,16 +26,11 @@ export const POST: RequestHandler = async ({ request, cookies, platform }) => {
 			return json({ success: false, error: 'Email and password are required' }, { status: 400 });
 		}
 
-		// Check if DB and SESSIONS are available
-		if (!platform?.env.DB || !platform?.env.SESSIONS) {
-			return json(
-				{ success: false, error: 'Database not configured' },
-				{ status: 500 }
-			);
-		}
+		const db = getDB();
+		const sessions = getSessions();
 
 		// Find user in database
-		const result = await platform.env.DB.prepare(
+		const result = await db.prepare(
 			'SELECT id, email, name, password_hash, membership, created_at FROM users WHERE email = ?'
 		)
 			.bind(email)
@@ -67,7 +64,7 @@ export const POST: RequestHandler = async ({ request, cookies, platform }) => {
 		};
 
 		// Store session in KV with 24-hour expiration
-		await platform.env.SESSIONS.put(
+		await sessions.put(
 			`session:${sessionToken}`,
 			JSON.stringify(sessionData),
 			{ expirationTtl: 60 * 60 * 24 } // 24 hours

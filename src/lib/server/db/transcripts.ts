@@ -1,4 +1,4 @@
-import type { D1Database } from '@cloudflare/workers-types';
+import type { D1Compat } from '$lib/server/d1-compat';
 
 export interface TranscriptSegment {
 	start: number; // seconds
@@ -29,8 +29,8 @@ interface TranscriptRow {
 /**
  * Get transcript for a video
  */
-export async function getTranscript(db: D1Database, videoId: string): Promise<Transcript | null> {
-	const result = await db
+export async function getTranscript(db: D1Compat, videoId: string): Promise<Transcript | null> {
+	const result = db
 		.prepare('SELECT * FROM transcripts WHERE video_id = ?')
 		.bind(videoId)
 		.first<TranscriptRow>();
@@ -46,8 +46,8 @@ export async function getTranscript(db: D1Database, videoId: string): Promise<Tr
 /**
  * Check if a transcript exists for a video
  */
-export async function hasTranscript(db: D1Database, videoId: string): Promise<boolean> {
-	const result = await db
+export async function hasTranscript(db: D1Compat, videoId: string): Promise<boolean> {
+	const result = db
 		.prepare('SELECT 1 FROM transcripts WHERE video_id = ? LIMIT 1')
 		.bind(videoId)
 		.first();
@@ -59,7 +59,7 @@ export async function hasTranscript(db: D1Database, videoId: string): Promise<bo
  * Create or update a transcript
  */
 export async function upsertTranscript(
-	db: D1Database,
+	db: D1Compat,
 	videoId: string,
 	segments: TranscriptSegment[],
 	language = 'en'
@@ -77,7 +77,7 @@ export async function upsertTranscript(
 		? Math.ceil(segments[segments.length - 1].end - segments[0].start)
 		: 0;
 
-	await db
+	db
 		.prepare(`
 			INSERT INTO transcripts (id, video_id, segments, language, generated_at, word_count, duration_covered)
 			VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -105,8 +105,8 @@ export async function upsertTranscript(
 /**
  * Delete a transcript
  */
-export async function deleteTranscript(db: D1Database, videoId: string): Promise<boolean> {
-	const result = await db
+export async function deleteTranscript(db: D1Compat, videoId: string): Promise<boolean> {
+	const result = db
 		.prepare('DELETE FROM transcripts WHERE video_id = ?')
 		.bind(videoId)
 		.run();
@@ -118,12 +118,12 @@ export async function deleteTranscript(db: D1Database, videoId: string): Promise
  * Search within transcripts
  */
 export async function searchTranscripts(
-	db: D1Database,
+	db: D1Compat,
 	query: string,
 	limit = 20
 ): Promise<{ video_id: string; matches: TranscriptSegment[] }[]> {
 	// Get all transcripts that might contain the query
-	const results = await db
+	const results = db
 		.prepare(`
 			SELECT video_id, segments 
 			FROM transcripts 

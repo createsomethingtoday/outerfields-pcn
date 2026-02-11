@@ -6,7 +6,7 @@
  */
 import { json, type RequestHandler } from '@sveltejs/kit';
 
-export const GET: RequestHandler = async ({ platform }) => {
+export const GET: RequestHandler = async () => {
 	try {
 		// In production, would use actual YouTube Data API
 		// const YOUTUBE_API_KEY = platform?.env.YOUTUBE_API_KEY;

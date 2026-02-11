@@ -1,6 +1,7 @@
 import { error } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { getVideoById, getVideos } from '$lib/server/db/videos';
+import { getDB } from '$lib/server/d1-compat';
 
 /**
  * Watch Page Server Load
@@ -8,12 +9,8 @@ import { getVideoById, getVideos } from '$lib/server/db/videos';
  * Fetches video data and related videos for the dedicated watch page.
  * Handles 404 for invalid video IDs and respects tier gating.
  */
-export const load: PageServerLoad = async ({ params, platform, locals }) => {
-	const db = platform?.env.DB;
-
-	if (!db) {
-		throw error(500, 'Database not available');
-	}
+export const load: PageServerLoad = async ({ params, locals }) => {
+	const db = getDB();
 
 	const { id } = params;
 

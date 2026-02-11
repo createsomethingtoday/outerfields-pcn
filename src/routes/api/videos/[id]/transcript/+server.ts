@@ -1,5 +1,7 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
+import { getDB } from '$lib/server/d1-compat';
+import { env } from '$lib/server/env';
 import {
 	getTranscript,
 	hasTranscript,
@@ -11,12 +13,8 @@ import {
  * GET /api/videos/[id]/transcript
  * Returns transcript for a video (if available)
  */
-export const GET: RequestHandler = async ({ params, platform, locals }) => {
-	const db = platform?.env.DB;
-
-	if (!db) {
-		return json({ success: false, error: 'Database not available' }, { status: 500 });
-	}
+export const GET: RequestHandler = async ({ params, locals }) => {
+	const db = getDB();
 
 	const { id: videoId } = params;
 
@@ -70,12 +68,8 @@ export const GET: RequestHandler = async ({ params, platform, locals }) => {
  * POST /api/videos/[id]/transcript
  * Create or update transcript (admin only or internal use)
  */
-export const POST: RequestHandler = async ({ params, platform, request, locals }) => {
-	const db = platform?.env.DB;
-
-	if (!db) {
-		return json({ success: false, error: 'Database not available' }, { status: 500 });
-	}
+export const POST: RequestHandler = async ({ params, request, locals }) => {
+	const db = getDB();
 
 	const { id: videoId } = params;
 
@@ -87,7 +81,7 @@ export const POST: RequestHandler = async ({ params, platform, request, locals }
 	const user = locals.user;
 	const apiKey = request.headers.get('X-API-Key');
 	const isAdmin = user?.role === 'admin';
-	const hasValidApiKey = apiKey === platform?.env.TRANSCRIPT_API_KEY;
+	const hasValidApiKey = apiKey === env('TRANSCRIPT_API_KEY');
 
 	if (!isAdmin && !hasValidApiKey) {
 		return json({ success: false, error: 'Not authorized' }, { status: 403 });
@@ -130,12 +124,8 @@ export const POST: RequestHandler = async ({ params, platform, request, locals }
  * HEAD /api/videos/[id]/transcript
  * Check if transcript exists
  */
-export const HEAD: RequestHandler = async ({ params, platform }) => {
-	const db = platform?.env.DB;
-
-	if (!db) {
-		return new Response(null, { status: 500 });
-	}
+export const HEAD: RequestHandler = async ({ params }) => {
+	const db = getDB();
 
 	const { id: videoId } = params;
 

@@ -1,5 +1,6 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
+import { getDB } from '$lib/server/d1-compat';
 import { getVideos, getVideosByCategory } from '$lib/server/db/videos';
 
 /**
@@ -9,12 +10,8 @@ import { getVideos, getVideosByCategory } from '$lib/server/db/videos';
  *   - category: filter by category (optional)
  *   - grouped: return videos grouped by category (optional, default false)
  */
-export const GET: RequestHandler = async ({ url, platform }) => {
-	const db = platform?.env.DB;
-
-	if (!db) {
-		return json({ error: 'Database not available' }, { status: 500 });
-	}
+export const GET: RequestHandler = async ({ url }) => {
+	const db = getDB();
 
 	const category = url.searchParams.get('category') || undefined;
 	const grouped = url.searchParams.get('grouped') === 'true';

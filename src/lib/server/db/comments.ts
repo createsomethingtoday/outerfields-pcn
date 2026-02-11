@@ -1,4 +1,4 @@
-import type { D1Database } from '@cloudflare/workers-types';
+import type { D1Compat } from '$lib/server/d1-compat';
 
 export interface Comment {
 	id: string;
@@ -23,13 +23,13 @@ export interface CommentThread extends CommentWithUser {
  * Get comments for a video with user info and nested replies
  */
 export async function getVideoComments(
-	db: D1Database,
+	db: D1Compat,
 	videoId: string,
 	limit = 50,
 	offset = 0
 ): Promise<{ comments: CommentThread[]; total: number }> {
 	// Get top-level comments with user info
-	const topLevel = await db
+	const topLevel = db
 		.prepare(`
 			SELECT c.*, u.name as user_name, u.email as user_email
 			FROM comments c
@@ -42,7 +42,7 @@ export async function getVideoComments(
 		.all<CommentWithUser>();
 
 	// Get total count
-	const countResult = await db
+	const countResult = db
 		.prepare('SELECT COUNT(*) as count FROM comments WHERE video_id = ? AND parent_id IS NULL')
 		.bind(videoId)
 		.first<{ count: number }>();
@@ -57,7 +57,7 @@ export async function getVideoComments(
 	const parentIds = topLevel.results.map(c => c.id);
 	const placeholders = parentIds.map(() => '?').join(',');
 	
-	const replies = await db
+	const replies = db
 		.prepare(`
 			SELECT c.*, u.name as user_name, u.email as user_email
 			FROM comments c
@@ -89,8 +89,8 @@ export async function getVideoComments(
 /**
  * Get comment count for a video
  */
-export async function getCommentCount(db: D1Database, videoId: string): Promise<number> {
-	const result = await db
+export async function getCommentCount(db: D1Compat, videoId: string): Promise<number> {
+	const result = db
 		.prepare('SELECT COUNT(*) as count FROM comments WHERE video_id = ?')
 		.bind(videoId)
 		.first<{ count: number }>();
@@ -102,7 +102,7 @@ export async function getCommentCount(db: D1Database, videoId: string): Promise<
  * Create a new comment
  */
 export async function createComment(
-	db: D1Database,
+	db: D1Compat,
 	videoId: string,
 	userId: string,
 	content: string,
@@ -111,7 +111,7 @@ export async function createComment(
 	const id = `cmt_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
 	const now = Math.floor(Date.now() / 1000);
 
-	await db
+	db
 		.prepare(`
 			INSERT INTO comments (id, video_id, user_id, parent_id, content, created_at, updated_at)
 			VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -134,14 +134,14 @@ export async function createComment(
  * Update a comment
  */
 export async function updateComment(
-	db: D1Database,
+	db: D1Compat,
 	commentId: string,
 	userId: string,
 	content: string
 ): Promise<boolean> {
 	const now = Math.floor(Date.now() / 1000);
 
-	const result = await db
+	const result = db
 		.prepare(`
 			UPDATE comments 
 			SET content = ?, updated_at = ?
@@ -157,18 +157,18 @@ export async function updateComment(
  * Delete a comment (and its replies)
  */
 export async function deleteComment(
-	db: D1Database,
+	db: D1Compat,
 	commentId: string,
 	userId: string
 ): Promise<boolean> {
 	// First delete replies
-	await db
+	db
 		.prepare('DELETE FROM comments WHERE parent_id = ?')
 		.bind(commentId)
 		.run();
 
 	// Then delete the comment itself
-	const result = await db
+	const result = db
 		.prepare('DELETE FROM comments WHERE id = ? AND user_id = ?')
 		.bind(commentId, userId)
 		.run();
@@ -179,8 +179,8 @@ export async function deleteComment(
 /**
  * Get a single comment by ID
  */
-export async function getCommentById(db: D1Database, commentId: string): Promise<Comment | null> {
-	const result = await db
+export async function getCommentById(db: D1Compat, commentId: string): Promise<Comment | null> {
+	const result = db
 		.prepare('SELECT * FROM comments WHERE id = ?')
 		.bind(commentId)
 		.first<Comment>();

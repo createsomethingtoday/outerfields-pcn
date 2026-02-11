@@ -1,6 +1,7 @@
 import { json } from '@sveltejs/kit';
 import type { RequestEvent } from '@sveltejs/kit';
 import { createDiscoveryCall, updateDiscoveryCallStatus } from '$lib/server/db/discovery-calls';
+import { getDB } from '$lib/server/d1-compat';
 
 /**
  * POST /api/calendly/webhook
@@ -11,13 +12,8 @@ import { createDiscoveryCall, updateDiscoveryCallStatus } from '$lib/server/db/d
  * - invitee.canceled: Discovery call cancelled
  * - invitee.rescheduled: Discovery call rescheduled (not directly supported, but handled as cancel + create)
  */
-export async function POST({ request, platform }: RequestEvent) {
-	const db = platform?.env.DB;
-
-	if (!db) {
-		console.error('Database not available');
-		return json({ success: false, error: 'Database unavailable' }, { status: 500 });
-	}
+export async function POST({ request }: RequestEvent) {
+	const db = getDB();
 
 	try {
 		const payload = await request.json();

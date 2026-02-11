@@ -4,7 +4,7 @@
  * CRUD operations for agent proposals with built-in guardrails.
  */
 
-import type { D1Database } from '@cloudflare/workers-types';
+import type { D1Compat } from '$lib/server/d1-compat';
 import type { 
   Proposal, 
   StoredProposal, 
@@ -25,7 +25,7 @@ function generateProposalId(): string {
  * Create a new proposal (with validation)
  */
 export async function createProposal(
-  db: D1Database,
+  db: D1Compat,
   proposal: Proposal,
   agentId: string = 'agent'
 ): Promise<{ success: boolean; proposalId?: string; error?: string; warnings?: string[] }> {
@@ -101,7 +101,7 @@ export async function createProposal(
  * Get pending proposals
  */
 export async function getPendingProposals(
-  db: D1Database,
+  db: D1Compat,
   limit: number = 50
 ): Promise<StoredProposal[]> {
   const result = await db.prepare(`
@@ -124,7 +124,7 @@ export async function getPendingProposals(
  * Get a proposal by ID
  */
 export async function getProposal(
-  db: D1Database,
+  db: D1Compat,
   id: string
 ): Promise<StoredProposal | null> {
   const result = await db.prepare(`
@@ -138,7 +138,7 @@ export async function getProposal(
  * Approve a proposal
  */
 export async function approveProposal(
-  db: D1Database,
+  db: D1Compat,
   id: string,
   reviewerId: string,
   notes?: string
@@ -184,7 +184,7 @@ export async function approveProposal(
  * Reject a proposal
  */
 export async function rejectProposal(
-  db: D1Database,
+  db: D1Compat,
   id: string,
   reviewerId: string,
   reason: string
@@ -230,7 +230,7 @@ export async function rejectProposal(
  * Apply an approved proposal
  */
 export async function applyProposal(
-  db: D1Database,
+  db: D1Compat,
   id: string,
   appliedBy: string
 ): Promise<{ success: boolean; changeId?: string; error?: string }> {
@@ -295,7 +295,7 @@ export async function applyProposal(
  * Rollback an applied change
  */
 export async function rollbackChange(
-  db: D1Database,
+  db: D1Compat,
   changeId: string,
   rolledBackBy: string,
   reason: string
@@ -347,7 +347,7 @@ export async function rollbackChange(
 /**
  * Get active applied changes
  */
-export async function getActiveChanges(db: D1Database): Promise<AppliedChange[]> {
+export async function getActiveChanges(db: D1Compat): Promise<AppliedChange[]> {
   const result = await db.prepare(`
     SELECT * FROM applied_changes WHERE is_active = 1 ORDER BY applied_at DESC
   `).all();

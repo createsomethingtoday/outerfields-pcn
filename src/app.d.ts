@@ -15,19 +15,7 @@ declare global {
 		}
 		// interface PageData {}
 		// interface PageState {}
-		interface Platform {
-			env: {
-				DB?: D1Database;
-				SESSIONS?: KVNamespace;
-				VIDEO_STATS?: KVNamespace;
-				AI?: Ai;
-				ANTHROPIC_API_KEY?: string;
-				STRIPE_SECRET_KEY?: string;
-				STRIPE_WEBHOOK_SECRET?: string;
-				RESEND_API_KEY?: string;
-				TRANSCRIPT_API_KEY?: string;
-			};
-		}
+		// Platform is unused with adapter-node — we use our own env/db modules
 	}
 }
 

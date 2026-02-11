@@ -2,13 +2,10 @@
  * Admin Proposals Page - Server
  */
 import type { PageServerLoad } from './$types';
+import { getDB } from '$lib/server/d1-compat';
 
-export const load: PageServerLoad = async ({ platform }) => {
-  const db = platform?.env?.DB;
-  
-  if (!db) {
-    return { proposals: [], stats: null };
-  }
+export const load: PageServerLoad = async () => {
+  const db = getDB();
   
   try {
     // Get pending proposals
