@@ -1,0 +1,13 @@
+run = "npm run dev"
+entrypoint = "src/routes/+page.svelte"
+
+[nix]
+channel = "stable-24_05"
+
+[deployment]
+run = ["sh", "-c", "npm run build && npm run start"]
+build = ["sh", "-c", "npm install && npm run build"]
+
+[[ports]]
+localPort = 5173
+externalPort = 80
