@@ -11,7 +11,7 @@
  * 3. Cloudflare API token with Stream permissions
  *
  * Usage:
- *   npx ts-node scripts/generate-veo-videos.ts [--dry-run] [--video-id <id>]
+ *   npx ts-node scripts/generate-veo-videos.ts [--dry-run] [--video-id <id>] [--skip-stream]
  *
  * Environment variables:
  *   GOOGLE_CLOUD_PROJECT - GCP project ID
@@ -26,6 +26,9 @@ import { OUTERFIELDS_VIDEO_PROMPTS, createVeoRequest, estimateCost, type VeoProm
 // Configuration
 // ============================================
 
+/** R2 public bucket CDN base URL — matches FeaturedVideos.svelte and ContentCategories.svelte */
+const R2_CDN_BASE = 'https://pub-cbac02584c2c4411aa214a7070ccd208.r2.dev';
+
 interface Config {
 	gcpProject: string;
 	gcpLocation: string;
@@ -34,6 +37,8 @@ interface Config {
 	outputDir: string;
 	dryRun: boolean;
 	specificVideoId?: string;
+	/** Skip Cloudflare Stream upload (R2 only) */
+	skipStream: boolean;
 }
 
 function loadConfig(): Config {
@@ -43,6 +48,7 @@ function loadConfig(): Config {
 
 	const args = process.argv.slice(2);
 	const dryRun = args.includes('--dry-run');
+	const skipStream = args.includes('--skip-stream');
 	const videoIdIndex = args.indexOf('--video-id');
 	const specificVideoId = videoIdIndex !== -1 ? args[videoIdIndex + 1] : undefined;
 
@@ -62,6 +68,7 @@ function loadConfig(): Config {
 		cfApiToken: cfApiToken || 'demo-token',
 		outputDir: './generated-videos',
 		dryRun,
+		skipStream,
 		specificVideoId
 	};
 }
@@ -211,7 +218,70 @@ async function pollForCompletion(
 }
 
 // ============================================
-// Cloudflare Stream Upload
+// Cloudflare R2 Upload (Primary — direct MP4 delivery)
+// ============================================
+
+interface R2UploadResult {
+	directUrl: string;
+	thumbnailUrl: string;
+	r2Key: string;
+}
+
+async function uploadToR2(
+	videoUrl: string,
+	prompt: VeoPrompt,
+	config: Config
+): Promise<R2UploadResult> {
+	console.log(`   📤 Uploading to R2 bucket...`);
+
+	const r2Key = `videos/${prompt.id}.mp4`;
+	const thumbnailKey = `thumbnails/${prompt.id}.jpg`;
+
+	if (config.dryRun) {
+		console.log('   [DRY RUN] Would upload to R2 bucket outerfields-videos');
+		return {
+			directUrl: `${R2_CDN_BASE}/${r2Key}`,
+			thumbnailUrl: `${R2_CDN_BASE}/${thumbnailKey}`,
+			r2Key
+		};
+	}
+
+	// Download video from GCS
+	const videoResponse = await fetch(videoUrl);
+	if (!videoResponse.ok) {
+		throw new Error(`Failed to download video: ${videoResponse.status}`);
+	}
+	const videoBuffer = await videoResponse.arrayBuffer();
+
+	// Upload to R2 via S3-compatible API
+	const putResponse = await fetch(
+		`https://api.cloudflare.com/client/v4/accounts/${config.cfAccountId}/r2/buckets/outerfields-videos/objects/${r2Key}`,
+		{
+			method: 'PUT',
+			headers: {
+				'Authorization': `Bearer ${config.cfApiToken}`,
+				'Content-Type': 'video/mp4'
+			},
+			body: videoBuffer
+		}
+	);
+
+	if (!putResponse.ok) {
+		const error = await putResponse.text();
+		throw new Error(`R2 upload failed: ${putResponse.status} - ${error}`);
+	}
+
+	console.log('   ✅ Video uploaded to R2');
+
+	return {
+		directUrl: `${R2_CDN_BASE}/${r2Key}`,
+		thumbnailUrl: `${R2_CDN_BASE}/${thumbnailKey}`,
+		r2Key
+	};
+}
+
+// ============================================
+// Cloudflare Stream Upload (Optional — for adaptive streaming)
 // ============================================
 
 interface StreamUploadResult {
@@ -325,11 +395,15 @@ interface VideoManifestEntry {
 	category: string;
 	duration: number;
 	style: string;
-	streamUid: string;
-	playbackUrl: string;
+	/** Direct R2 MP4 URL — primary playback source */
+	directUrl: string;
 	thumbnailUrl: string;
-	dashUrl: string;
-	hlsUrl: string;
+	/** R2 object key */
+	r2Key: string;
+	/** Cloudflare Stream UID (if uploaded) */
+	streamUid?: string;
+	hlsUrl?: string;
+	dashUrl?: string;
 	generatedAt: string;
 }
 
@@ -339,23 +413,28 @@ interface VideoManifest {
 	videos: VideoManifestEntry[];
 }
 
-function generateManifest(
-	results: Array<{ prompt: VeoPrompt; stream: StreamUploadResult }>
-): VideoManifest {
+interface PipelineResult {
+	prompt: VeoPrompt;
+	r2: R2UploadResult;
+	stream?: StreamUploadResult;
+}
+
+function generateManifest(results: PipelineResult[]): VideoManifest {
 	return {
 		version: '1.0.0',
 		generatedAt: new Date().toISOString(),
-		videos: results.map(({ prompt, stream }) => ({
+		videos: results.map(({ prompt, r2, stream }) => ({
 			id: prompt.id,
 			title: prompt.title,
 			category: prompt.category,
 			duration: prompt.duration,
 			style: prompt.style,
-			streamUid: stream.uid,
-			playbackUrl: stream.playbackUrl,
-			thumbnailUrl: stream.thumbnailUrl,
-			dashUrl: stream.dashUrl,
-			hlsUrl: stream.hlsUrl,
+			directUrl: r2.directUrl,
+			thumbnailUrl: r2.thumbnailUrl,
+			r2Key: r2.r2Key,
+			streamUid: stream?.uid,
+			hlsUrl: stream?.hlsUrl,
+			dashUrl: stream?.dashUrl,
 			generatedAt: new Date().toISOString()
 		}))
 	};
@@ -395,7 +474,7 @@ async function main() {
 	console.log('');
 
 	// Process each video
-	const results: Array<{ prompt: VeoPrompt; stream: StreamUploadResult }> = [];
+	const results: PipelineResult[] = [];
 
 	for (const prompt of prompts) {
 		try {
@@ -407,15 +486,22 @@ async function main() {
 				continue;
 			}
 
-			// Upload to Cloudflare Stream
-			const streamResult = await uploadToCloudflareStream(
-				veoResult.videoUrl,
-				prompt,
-				config
-			);
+			// Upload to R2 (primary — direct MP4 delivery)
+			const r2Result = await uploadToR2(veoResult.videoUrl, prompt, config);
+			console.log(`   ✅ R2: ${r2Result.directUrl}`);
 
-			results.push({ prompt, stream: streamResult });
-			console.log(`   ✅ Complete: ${streamResult.playbackUrl}`);
+			// Optionally upload to Cloudflare Stream (adaptive streaming)
+			let streamResult: StreamUploadResult | undefined;
+			if (!config.skipStream) {
+				streamResult = await uploadToCloudflareStream(
+					veoResult.videoUrl,
+					prompt,
+					config
+				);
+				console.log(`   ✅ Stream: ${streamResult.hlsUrl}`);
+			}
+
+			results.push({ prompt, r2: r2Result, stream: streamResult });
 		} catch (error) {
 			console.error(`   ❌ Failed: ${error}`);
 		}

@@ -5,21 +5,24 @@
  */
 
 /**
- * Video source information for streaming
+ * Video source information
+ *
+ * Primary delivery is via R2 direct URLs (MP4).
+ * Cloudflare Stream fields are optional for future adaptive streaming (HLS/DASH).
  */
 export interface VideoSource {
-	/** Cloudflare Stream UID */
-	streamUid: string;
-	/** Direct playback URL (iframe embed) */
-	playbackUrl: string;
-	/** HLS manifest URL for adaptive streaming */
-	hlsUrl: string;
-	/** DASH manifest URL for adaptive streaming */
-	dashUrl: string;
+	/** Direct MP4 URL (R2 public bucket) — primary playback source */
+	directUrl: string;
 	/** Thumbnail image URL */
 	thumbnailUrl: string;
 	/** Animated thumbnail (if available) */
 	animatedThumbnailUrl?: string;
+	/** Cloudflare Stream UID (optional — for adaptive streaming) */
+	streamUid?: string;
+	/** HLS manifest URL (optional — requires Stream) */
+	hlsUrl?: string;
+	/** DASH manifest URL (optional — requires Stream) */
+	dashUrl?: string;
 }
 
 /**
@@ -190,11 +193,13 @@ export interface DemoVideoManifest {
 		category: string;
 		duration: number;
 		style: string;
-		streamUid: string;
-		playbackUrl: string;
+		/** Direct R2 MP4 URL — primary playback source */
+		directUrl: string;
 		thumbnailUrl: string;
-		dashUrl: string;
-		hlsUrl: string;
+		/** Cloudflare Stream UID (if uploaded to Stream) */
+		streamUid?: string;
+		hlsUrl?: string;
+		dashUrl?: string;
 		generatedAt: string;
 	}>;
 }
@@ -214,13 +219,37 @@ export function manifestToVideoContent(
 		durationFormatted: formatDuration(entry.duration),
 		category: entry.category,
 		source: {
+			directUrl: entry.directUrl,
+			thumbnailUrl: entry.thumbnailUrl,
 			streamUid: entry.streamUid,
-			playbackUrl: entry.playbackUrl,
 			hlsUrl: entry.hlsUrl,
-			dashUrl: entry.dashUrl,
-			thumbnailUrl: entry.thumbnailUrl
+			dashUrl: entry.dashUrl
 		},
 		...overrides
+	};
+}
+
+/**
+ * Convert VideoContent to the simple Video interface used by videoPlayer store.
+ * Bridges the rich type system with the component-level playback interface.
+ */
+export function toPlayerVideo(content: VideoContent): {
+	id: string;
+	title: string;
+	description: string;
+	duration: string;
+	thumbnail: string;
+	category: string;
+	src: string;
+} {
+	return {
+		id: content.id,
+		title: content.title,
+		description: content.description || '',
+		duration: content.durationFormatted,
+		thumbnail: content.source.thumbnailUrl,
+		category: content.category,
+		src: content.source.directUrl
 	};
 }
 
