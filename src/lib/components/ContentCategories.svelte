@@ -99,7 +99,7 @@
 			'crew-call': 'Crew Call',
 			'reconnecting-relationships': 'Reconnecting Relationships',
 			kodiak: 'Kodiak',
-			'lincoln-manufacturing': 'Lincoln Manufacturing',
+			'lincoln-manufacturing': 'Lincoln Manufacturing Council',
 			'guns-out-tv': 'Guns Out TV',
 			films: 'Films',
 			'coming-soon': 'Coming Soon'
