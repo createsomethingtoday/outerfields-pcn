@@ -7,6 +7,7 @@
 	 */
 	import { Play } from 'lucide-svelte';
 	import { videoPlayer, type Video } from '$lib/stores/videoPlayer';
+	import { VIDEO_CDN_BASE } from '$lib/constants/video';
 
 	// PCN Overview video
 	const overviewVideo: Video = {
@@ -16,7 +17,7 @@
 		duration: '2:30',
 		thumbnail: '/thumbnails/hero-building-outerfields.jpg',
 		category: 'Overview',
-		src: 'https://pub-cbac02584c2c4411aa214a7070ccd208.r2.dev/trailers/pcn-trailer.mp4'
+		src: `${VIDEO_CDN_BASE}/trailers/pcn-trailer.mp4`
 	};
 
 	function playOverview() {

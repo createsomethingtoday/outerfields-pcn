@@ -14,8 +14,7 @@
 	import { videoStats } from '$lib/stores/videoStats';
 	import VideoModal from './VideoModal.svelte';
 
-	// Cloudflare R2 CDN base URL
-	const CDN_BASE = 'https://pub-cbac02584c2c4411aa214a7070ccd208.r2.dev';
+	import { VIDEO_CDN_BASE } from '$lib/constants/video';
 
 	const videos: Video[] = [
 		{
@@ -23,54 +22,54 @@
 			title: 'Weatherford, TX Promo',
 			description: 'Showcasing the best of Weatherford, Texas',
 			duration: '0:57',
-			thumbnail: `${CDN_BASE}/thumbnails/weatherford-promo.jpg`,
+			thumbnail: `${VIDEO_CDN_BASE}/thumbnails/weatherford-promo.jpg`,
 			category: 'Promo',
-			src: `${CDN_BASE}/videos/weatherford-promo.mp4`
+			src: `${VIDEO_CDN_BASE}/videos/weatherford-promo.mp4`
 		},
 		{
 			id: 'v2',
 			title: 'Outerfields Takes on the Texas State Fair',
 			description: 'Experience the Texas State Fair with Outerfields',
 			duration: '0:57',
-			thumbnail: `${CDN_BASE}/thumbnails/texas-state-fair.jpg`,
+			thumbnail: `${VIDEO_CDN_BASE}/thumbnails/texas-state-fair.jpg`,
 			category: 'Event',
-			src: `${CDN_BASE}/videos/texas-state-fair.mp4`
+			src: `${VIDEO_CDN_BASE}/videos/texas-state-fair.mp4`
 		},
 		{
 			id: 'v3',
 			title: 'GOTV USCCA POD Jerry Yanis',
 			description: 'Jerry Yanis discusses GOTV with USCCA',
 			duration: '12:19',
-			thumbnail: `${CDN_BASE}/thumbnails/gotv-uscca.jpg`,
+			thumbnail: `${VIDEO_CDN_BASE}/thumbnails/gotv-uscca.jpg`,
 			category: 'Podcast',
-			src: `${CDN_BASE}/videos/gotv-uscca.mp4`
+			src: `${VIDEO_CDN_BASE}/videos/gotv-uscca.mp4`
 		},
 		{
 			id: 'v4',
 			title: 'Hilti Cast In Anchors',
 			description: 'Professional product showcase for Hilti anchors',
 			duration: '0:57',
-			thumbnail: `${CDN_BASE}/thumbnails/hilti-anchors.jpg`,
+			thumbnail: `${VIDEO_CDN_BASE}/thumbnails/hilti-anchors.jpg`,
 			category: 'Product',
-			src: `${CDN_BASE}/videos/hilti-anchors.mp4`
+			src: `${VIDEO_CDN_BASE}/videos/hilti-anchors.mp4`
 		},
 		{
 			id: 'v5',
 			title: 'STACCATO Prairie Fire Gun Range Promo',
 			description: 'Prairie Fire Gun Range promotional trailer',
 			duration: '1:16',
-			thumbnail: `${CDN_BASE}/thumbnails/staccato-promo.jpg`,
+			thumbnail: `${VIDEO_CDN_BASE}/thumbnails/staccato-promo.jpg`,
 			category: 'Promo',
-			src: `${CDN_BASE}/videos/staccato-promo.mp4`
+			src: `${VIDEO_CDN_BASE}/videos/staccato-promo.mp4`
 		},
 		{
 			id: 'v6',
 			title: 'USCCA Expo Promo Tim Kennedy',
 			description: 'Tim Kennedy at the USCCA Expo',
 			duration: '0:42',
-			thumbnail: `${CDN_BASE}/thumbnails/uscca-expo-promo.jpg`,
+			thumbnail: `${VIDEO_CDN_BASE}/thumbnails/uscca-expo-promo.jpg`,
 			category: 'Promo',
-			src: `${CDN_BASE}/videos/uscca-expo-promo.mp4`
+			src: `${VIDEO_CDN_BASE}/videos/uscca-expo-promo.mp4`
 		}
 	];
 

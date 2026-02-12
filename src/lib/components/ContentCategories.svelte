@@ -19,8 +19,7 @@
 	import type { Video as DbVideo } from '$lib/server/db/videos';
 	import { categoryFilter, FILTER_TO_CATEGORIES, FILTER_LABELS, type CategoryFilter } from '$lib/stores/categoryFilter.svelte';
 
-	// Cloudflare R2 CDN base URL (public bucket) - used for video assets only
-	const CDN_BASE = 'https://pub-cbac02584c2c4411aa214a7070ccd208.r2.dev';
+	import { VIDEO_CDN_BASE } from '$lib/constants/video';
 
 	/**
 	 * Get thumbnail path - uses local static thumbnails (Flux-generated)
@@ -109,8 +108,7 @@
 
 	function toAssetUrl(path: string): string {
 		if (path.startsWith('http://') || path.startsWith('https://')) return path;
-		// Normalize leading slash so CDN_BASE + "/videos/..." doesn't double-slash
-		return `${CDN_BASE}${path.startsWith('/') ? '' : '/'}${path}`;
+		return `${VIDEO_CDN_BASE}${path.startsWith('/') ? '' : '/'}${path}`;
 	}
 
 	function buildRowVideo(v: DbVideo): RowVideo {

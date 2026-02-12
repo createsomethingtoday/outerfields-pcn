@@ -18,8 +18,12 @@
 	import { ChevronLeft, ChevronRight, Lock } from 'lucide-svelte';
 	import type { PageData } from './$types';
 
-	// Cloudflare R2 CDN base URL
-	const CDN_BASE = 'https://pub-cbac02584c2c4411aa214a7070ccd208.r2.dev';
+	import { VIDEO_CDN_BASE } from '$lib/constants/video';
+
+	// In dev, when the CDN file is missing, use a public sample so the player still works
+	const FALLBACK_VIDEO_SRC = import.meta.env.DEV
+		? 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4'
+		: undefined;
 
 	let { data }: { data: PageData } = $props();
 
@@ -35,7 +39,7 @@
 	// Get video source URL
 	function getVideoSrc(assetPath: string): string {
 		if (assetPath.startsWith('http')) return assetPath;
-		return `${CDN_BASE}${assetPath.startsWith('/') ? '' : '/'}${assetPath}`;
+		return `${VIDEO_CDN_BASE}${assetPath.startsWith('/') ? '' : '/'}${assetPath}`;
 	}
 
 	// Get thumbnail URL
@@ -153,6 +157,7 @@
 					src={getVideoSrc(video.asset_path)}
 					poster={getThumbnailSrc(video.thumbnail_path)}
 					title={video.title}
+					fallbackSrc={FALLBACK_VIDEO_SRC}
 					onTimeUpdate={handleTimeUpdate}
 				/>
 			{:else}
@@ -256,12 +261,13 @@
 		grid-template-columns: 1fr 360px;
 		gap: 1.5rem;
 		max-width: 1800px;
+		width: 100%;
 		margin: 0 auto;
 		padding: 0 1.5rem;
 		box-sizing: border-box;
 	}
 
-	/* Main Content */
+	/* Main Content - min-width: 0 allows grid item to shrink below content size */
 	.main-content {
 		min-width: 0;
 		max-width: 100%;
@@ -432,11 +438,12 @@
 		padding-top: 0.5rem;
 	}
 
-	/* Responsive - iPad and tablets */
+	/* Responsive - iPad and tablets (single column + tighter layout) */
 	@media (max-width: 1100px) {
 		.watch-layout {
 			grid-template-columns: 1fr;
 			padding: 0 1rem;
+			gap: 1.25rem;
 		}
 
 		.sidebar {
@@ -444,7 +451,39 @@
 		}
 	}
 
-	/* Tablet portrait */
+	/* Tablet-only: reduce vertical bulk so the page isn't too tall */
+	@media (max-width: 1100px) and (min-width: 641px) {
+		.watch-page {
+			padding-top: 4rem;
+		}
+
+		.video-info {
+			padding: 1rem 0;
+		}
+
+		.video-meta {
+			margin-bottom: 0.5rem;
+		}
+
+		.video-title {
+			margin-bottom: 0.5rem;
+		}
+
+		.video-description {
+			margin-bottom: 1rem;
+		}
+
+		.episode-nav {
+			margin: 1.25rem 0;
+			padding: 1.25rem 0;
+		}
+
+		.transcript-section {
+			margin: 1rem 0;
+		}
+	}
+
+	/* Tablet portrait and below */
 	@media (max-width: 768px) {
 		.watch-page {
 			padding-top: 4rem;
@@ -455,30 +494,57 @@
 		}
 	}
 
-	/* Mobile */
+	/* Mobile - reduce vertical bulk so the page isn't too tall */
 	@media (max-width: 640px) {
 		.watch-page {
 			padding-top: 0;
+			min-height: auto;
 		}
 
 		.watch-layout {
-			padding: 0;
+			padding: 0 0.75rem;
+			gap: 1rem;
 		}
 
 		.video-info {
-			padding: 1rem;
+			padding: 0.75rem 0;
 		}
 
-		.sidebar {
-			padding: 0 1rem 2rem;
+		.video-meta {
+			margin-bottom: 0.5rem;
+		}
+
+		.video-title {
+			margin-bottom: 0.5rem;
+		}
+
+		.video-description {
+			margin-bottom: 1rem;
 		}
 
 		.episode-nav {
+			margin: 1rem 0;
+			padding: 1rem 0;
 			flex-direction: column;
 		}
 
 		.episode-link.next {
 			margin-left: 0;
+		}
+
+		.transcript-section {
+			margin: 0.75rem 0;
+		}
+
+		.sidebar {
+			padding: 0 0 2rem;
+		}
+	}
+
+	/* Very small viewports - prevent overflow */
+	@media (max-width: 380px) {
+		.watch-layout {
+			padding: 0 0.5rem;
 		}
 	}
 </style>

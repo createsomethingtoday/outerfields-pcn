@@ -31,6 +31,8 @@
 		poster?: string;
 		title: string;
 		autoplay?: boolean;
+		/** Optional fallback source when main src fails to load (e.g. dev or missing CDN file) */
+		fallbackSrc?: string;
 		onTimeUpdate?: (currentTime: number, duration: number) => void;
 	}
 
@@ -40,8 +42,14 @@
 		poster,
 		title,
 		autoplay = false,
+		fallbackSrc,
 		onTimeUpdate
 	}: Props = $props();
+
+	// When main src fails we can switch to fallback; reset when src prop changes
+	let loadError = $state(false);
+	let usedFallback = $state(false);
+	let effectiveSrc = $derived(usedFallback && fallbackSrc ? fallbackSrc : src);
 
 	// Player state
 	let videoElement: HTMLVideoElement | null = $state(null);
@@ -149,6 +157,31 @@
 	function handleLoadedMetadata() {
 		if (videoElement) {
 			duration = videoElement.duration;
+		}
+		loadError = false;
+	}
+
+	function handleVideoError() {
+		loadError = true;
+		// If we have a fallback and haven't tried it yet, switch to it
+		if (fallbackSrc && !usedFallback) {
+			usedFallback = true;
+			loadError = false;
+			if (videoElement) {
+				videoElement.src = fallbackSrc;
+				videoElement.load();
+			}
+		}
+	}
+
+	function tryFallback() {
+		if (fallbackSrc && !usedFallback) {
+			usedFallback = true;
+			loadError = false;
+			if (videoElement) {
+				videoElement.src = fallbackSrc;
+				videoElement.load();
+			}
 		}
 	}
 
@@ -306,6 +339,13 @@
 			videoElement.onpause = () => (isPlaying = false);
 		}
 	});
+
+	// When src prop changes (e.g. navigation), reset error state so new video gets a fresh try
+	$effect(() => {
+		src;
+		loadError = false;
+		usedFallback = false;
+	});
 </script>
 
 <div
@@ -321,10 +361,11 @@
 	<!-- svelte-ignore a11y_media_has_caption -->
 	<video
 		bind:this={videoElement}
-		{src}
+		src={effectiveSrc}
 		poster={poster}
 		ontimeupdate={handleTimeUpdate}
 		onloadedmetadata={handleLoadedMetadata}
+		onerror={handleVideoError}
 		onended={() => (isPlaying = false)}
 		onclick={togglePlay}
 		autoplay={autoplay}
@@ -333,6 +374,21 @@
 	>
 		<track kind="captions" />
 	</video>
+
+	{#if loadError}
+		<div class="video-error-overlay">
+			<p class="video-error-message">This video couldn’t be loaded.</p>
+			{#if fallbackSrc && !usedFallback}
+				<button type="button" class="video-error-fallback" onclick={tryFallback}>
+					Try sample video
+				</button>
+			{:else if usedFallback}
+				<p class="video-error-hint">Playing fallback sample.</p>
+			{:else}
+				<p class="video-error-hint">The file may be missing or the link may be wrong.</p>
+			{/if}
+		</div>
+	{/if}
 
 	<!-- Play/Pause overlay button -->
 	<button
@@ -351,10 +407,31 @@
 	<!-- Controls overlay -->
 	<div class="controls-overlay" class:visible={showControls || !isPlaying}>
 		<!-- Progress bar -->
-		<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
 		<div
 			class="progress-bar-container"
+			role="slider"
+			tabindex="0"
+			aria-label="Video progress"
+			aria-valuenow={progressPercent}
+			aria-valuemin="0"
+			aria-valuemax="100"
+			aria-valuetext="{formatTime(currentTime)} of {formatTime(duration)}"
 			onclick={handleProgressClick}
+			onkeydown={(e) => {
+				if (e.key === 'ArrowLeft') {
+					e.preventDefault();
+					seekRelative(-10);
+				} else if (e.key === 'ArrowRight') {
+					e.preventDefault();
+					seekRelative(10);
+				} else if (e.key === 'Home') {
+					e.preventDefault();
+					seekRelative(-duration);
+				} else if (e.key === 'End') {
+					e.preventDefault();
+					seekRelative(duration);
+				}
+			}}
 			onmousemove={handleProgressHover}
 			onmouseleave={handleProgressLeave}
 		>
@@ -498,6 +575,8 @@
 	.watch-player {
 		position: relative;
 		width: 100%;
+		max-width: 100%;
+		min-height: 0;
 		background: #000;
 		border-radius: var(--radius-lg);
 		overflow: hidden;
@@ -521,8 +600,54 @@
 	.video-element {
 		width: 100%;
 		height: 100%;
+		max-width: 100%;
+		max-height: 100%;
 		object-fit: contain;
+		vertical-align: middle;
 		cursor: pointer;
+	}
+
+	/* Video load error overlay */
+	.video-error-overlay {
+		position: absolute;
+		inset: 0;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		background: rgba(0, 0, 0, 0.85);
+		color: var(--color-fg-primary);
+		text-align: center;
+		padding: 1.5rem;
+		z-index: 4;
+	}
+
+	.video-error-message {
+		font-size: 1.125rem;
+		font-weight: 600;
+		margin: 0 0 0.5rem;
+	}
+
+	.video-error-hint {
+		font-size: 0.875rem;
+		color: var(--color-fg-muted);
+		margin: 0 0 1rem;
+	}
+
+	.video-error-fallback {
+		padding: 0.625rem 1.25rem;
+		background: var(--color-primary);
+		color: var(--color-bg-pure);
+		border: none;
+		border-radius: var(--radius-md);
+		font-weight: 600;
+		font-size: 0.875rem;
+		cursor: pointer;
+		transition: opacity var(--duration-micro) var(--ease-standard);
+	}
+
+	.video-error-fallback:hover {
+		opacity: 0.9;
 	}
 
 	/* Center play button */
@@ -581,6 +706,8 @@
 		height: 32px;
 		margin-bottom: 0.75rem;
 		cursor: pointer;
+		/* Larger touch target on small screens */
+		touch-action: none;
 	}
 
 	.engagement-heatmap {
@@ -786,10 +913,21 @@
 		opacity: 1;
 	}
 
-	/* Responsive */
+	/* Responsive - tablet: cap player height so layout isn't too tall */
+	@media (max-width: 1100px) and (min-width: 641px) {
+		.watch-player {
+			max-height: 55vh;
+		}
+	}
+
 	@media (max-width: 768px) {
 		.controls-overlay {
 			padding: 1.5rem 0.75rem 0.75rem;
+		}
+
+		.progress-bar-container {
+			height: 40px;
+			margin-bottom: 0.5rem;
 		}
 
 		.volume-slider {
@@ -810,13 +948,69 @@
 		}
 	}
 
+	/* Responsive - mobile: cap height so the page isn't too tall */
+	@media (max-width: 640px) {
+		.watch-player {
+			max-height: 45vh;
+			aspect-ratio: 16 / 9;
+		}
+	}
+
 	@media (max-width: 480px) {
+		.watch-player {
+			border-radius: 0;
+			max-height: 40vh;
+		}
+
+		.controls-overlay {
+			padding: 1rem 0.5rem 0.5rem;
+		}
+
 		.controls-bar {
-			gap: 0.5rem;
+			gap: 0.375rem;
 		}
 
 		.control-btn {
 			padding: 0.375rem;
+		}
+
+		.control-btn :global(svg) {
+			width: 20px;
+			height: 20px;
+		}
+
+		.progress-bar-container {
+			height: 44px;
+			margin-bottom: 0.25rem;
+		}
+
+		.time-display {
+			font-size: 0.6875rem;
+		}
+
+		.center-play-button {
+			width: 56px;
+			height: 56px;
+		}
+
+		.video-error-message {
+			font-size: 1rem;
+		}
+
+		.video-error-hint {
+			font-size: 0.8125rem;
+		}
+	}
+
+	/* Very small viewports */
+	@media (max-width: 360px) {
+		.controls-bar {
+			flex-wrap: wrap;
+		}
+
+		.controls-right {
+			width: 100%;
+			justify-content: flex-end;
 		}
 	}
 </style>

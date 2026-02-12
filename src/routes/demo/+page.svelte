@@ -38,24 +38,23 @@
 		}
 	];
 
-	// Cloudflare R2 CDN base URL (same as marketing page)
-	const CDN_BASE = 'https://pub-cbac02584c2c4411aa214a7070ccd208.r2.dev';
+	import { VIDEO_CDN_BASE } from '$lib/constants/video';
 
 	// Video source mapping for demo content
 	const videoSources: Record<string, string> = {
-		'1': `${CDN_BASE}/videos/weatherford-promo.mp4`,
-		'2': `${CDN_BASE}/videos/texas-state-fair.mp4`,
-		'3': `${CDN_BASE}/videos/gotv-uscca.mp4`,
-		'4': `${CDN_BASE}/videos/hilti-anchors.mp4`,
-		'5': `${CDN_BASE}/videos/staccato-promo.mp4`,
-		'6': `${CDN_BASE}/videos/uscca-expo-promo.mp4`,
-		'7': `${CDN_BASE}/videos/weatherford-promo.mp4`,
-		'8': `${CDN_BASE}/videos/texas-state-fair.mp4`,
-		'9': `${CDN_BASE}/videos/gotv-uscca.mp4`,
-		'10': `${CDN_BASE}/videos/hilti-anchors.mp4`,
-		'11': `${CDN_BASE}/videos/staccato-promo.mp4`,
-		'12': `${CDN_BASE}/videos/uscca-expo-promo.mp4`,
-		featured: `${CDN_BASE}/videos/gotv-uscca.mp4`
+		'1': `${VIDEO_CDN_BASE}/videos/weatherford-promo.mp4`,
+		'2': `${VIDEO_CDN_BASE}/videos/texas-state-fair.mp4`,
+		'3': `${VIDEO_CDN_BASE}/videos/gotv-uscca.mp4`,
+		'4': `${VIDEO_CDN_BASE}/videos/hilti-anchors.mp4`,
+		'5': `${VIDEO_CDN_BASE}/videos/staccato-promo.mp4`,
+		'6': `${VIDEO_CDN_BASE}/videos/uscca-expo-promo.mp4`,
+		'7': `${VIDEO_CDN_BASE}/videos/weatherford-promo.mp4`,
+		'8': `${VIDEO_CDN_BASE}/videos/texas-state-fair.mp4`,
+		'9': `${VIDEO_CDN_BASE}/videos/gotv-uscca.mp4`,
+		'10': `${VIDEO_CDN_BASE}/videos/hilti-anchors.mp4`,
+		'11': `${VIDEO_CDN_BASE}/videos/staccato-promo.mp4`,
+		'12': `${VIDEO_CDN_BASE}/videos/uscca-expo-promo.mp4`,
+		featured: `${VIDEO_CDN_BASE}/videos/gotv-uscca.mp4`
 	};
 
 	// Engagement data for heatmap visualization

@@ -7,6 +7,7 @@
 	import { Palette, Type, Accessibility, Layout, Sparkles, Box, ArrowUpRight, Play } from 'lucide-svelte';
 	import { videoPlayer } from '$lib/stores/videoPlayer';
 	import VideoModal from '$lib/components/VideoModal.svelte';
+	import { VIDEO_CDN_BASE } from '$lib/constants/video';
 
 	// Sample video for component preview
 	const sampleVideo = {
@@ -14,9 +15,9 @@
 		title: 'Weatherford, TX Promo',
 		description: 'Showcasing the best of Weatherford, Texas',
 		duration: '0:57',
-		thumbnail: 'https://pub-cbac02584c2c4411aa214a7070ccd208.r2.dev/thumbnails/weatherford-promo.jpg',
+		thumbnail: `${VIDEO_CDN_BASE}/thumbnails/weatherford-promo.jpg`,
 		category: 'Promo',
-		src: 'https://pub-cbac02584c2c4411aa214a7070ccd208.r2.dev/videos/weatherford-promo.mp4'
+		src: `${VIDEO_CDN_BASE}/videos/weatherford-promo.mp4`
 	};
 
 	const components = [
@@ -109,7 +110,7 @@
 					<div class="card-preview">
 						<div class="preview-video">
 							<img
-								src="https://pub-cbac02584c2c4411aa214a7070ccd208.r2.dev/thumbnails/weatherford-promo.jpg"
+								src={`${VIDEO_CDN_BASE}/thumbnails/weatherford-promo.jpg`}
 								alt="Video preview"
 								loading="lazy"
 							/>

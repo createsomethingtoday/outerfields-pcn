@@ -6,6 +6,9 @@
  */
 import { readFileSync, existsSync, mkdirSync, readdirSync } from 'fs';
 import { join } from 'path';
+import { createRequire } from 'module';
+
+const require = createRequire(import.meta.url);
 
 let _db: any = null;
 let _initFailed = false;
@@ -19,7 +22,7 @@ function getConnection(): any {
 	if (_initFailed) throw new Error('Database initialization previously failed');
 
 	try {
-		// Dynamic import to avoid Vite bundling issues with native modules
+		// Use require so better-sqlite3 (native module) loads correctly in ESM
 		const Database = require('better-sqlite3');
 
 		const dbPath = process.env.DATABASE_PATH || join(process.cwd(), 'data', 'outerfields.db');
