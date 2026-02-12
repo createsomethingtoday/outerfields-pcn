@@ -14,7 +14,7 @@
 		title: 'What is a Private Content Network?',
 		description: 'See how we build custom Private Content Networks for creators and brands.',
 		duration: '2:30',
-		thumbnail: '/thumbnails/pcn-overview.jpg',
+		thumbnail: '/thumbnails/hero-building-outerfields.jpg',
 		category: 'Overview',
 		src: 'https://pub-cbac02584c2c4411aa214a7070ccd208.r2.dev/trailers/pcn-trailer.mp4'
 	};

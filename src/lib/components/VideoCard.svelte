@@ -6,6 +6,7 @@
 	 * Hover reveals gradient overlay with watch button.
 	 */
 	import { Lock, Play, Star } from 'lucide-svelte';
+	import { THUMBNAIL_PLACEHOLDER } from '$lib/constants/thumbnails';
 
 	interface Props {
 		id: string;
@@ -31,9 +32,23 @@
 		onClick
 	}: Props = $props();
 
+	// Fall back to placeholder when thumbnail fails to load
+	let thumbnailFailed = $state(false);
+	const posterSrc = $derived(thumbnailFailed ? THUMBNAIL_PLACEHOLDER : thumbnail);
+
+	function onThumbnailError() {
+		thumbnailFailed = true;
+	}
+
+	// Reset when thumbnail prop changes (e.g. different video in same slot)
+	$effect(() => {
+		thumbnail;
+		thumbnailFailed = false;
+	});
+
 	// Determine if this video should show as locked
-	const isLocked = tier === 'gated';
-	const isFree = tier === 'free';
+	const isLocked = $derived(tier === 'gated');
+	const isFree = $derived(tier === 'free');
 
 	// Use link if href provided and no onClick, otherwise use button
 	const useLink = $derived(!!href && !onClick);
@@ -49,10 +64,11 @@
 {#snippet cardContent()}
 	<div class="poster-container">
 		<img
-			src={thumbnail}
+			src={posterSrc}
 			alt={title}
 			class="poster-image"
 			loading="lazy"
+			onerror={onThumbnailError}
 		/>
 
 		<!-- Tufte-inspired: minimal hover overlay with centered play icon -->

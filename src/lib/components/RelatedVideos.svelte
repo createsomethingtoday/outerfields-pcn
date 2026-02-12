@@ -9,6 +9,7 @@
 	 * - Links to /watch/[id] routes
 	 */
 	import { Play, Clock } from 'lucide-svelte';
+	import { THUMBNAIL_PLACEHOLDER } from '$lib/constants/thumbnails';
 
 	interface RelatedVideo {
 		id: string;
@@ -33,6 +34,22 @@
 		title = 'Up Next',
 		layout = 'sidebar'
 	}: Props = $props();
+
+	// Fallback to placeholder when a thumbnail fails to load
+	let relatedThumbnailSrc = $state<Record<string, string>>({});
+	function setRelatedThumbnailPlaceholder(id: string) {
+		relatedThumbnailSrc = { ...relatedThumbnailSrc, [id]: THUMBNAIL_PLACEHOLDER };
+	}
+
+	function thumbnailFallbackAction(node: HTMLImageElement, videoId: string) {
+		const handler = () => setRelatedThumbnailPlaceholder(videoId);
+		node.addEventListener('error', handler);
+		return {
+			destroy() {
+				node.removeEventListener('error', handler);
+			}
+		};
+	}
 
 	// Filter out current video and limit to reasonable number
 	const displayVideos = $derived(
@@ -75,10 +92,11 @@
 			>
 				<div class="thumbnail-wrapper">
 					<img
-						src={video.thumbnail}
+						src={relatedThumbnailSrc[video.id] ?? video.thumbnail}
 						alt=""
 						class="thumbnail"
 						loading="lazy"
+						use:thumbnailFallbackAction={video.id}
 					/>
 					<div class="thumbnail-overlay">
 						<span class="play-icon">
