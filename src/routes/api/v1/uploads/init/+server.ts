@@ -28,102 +28,107 @@ function isSupportedPlaybackPolicy(value: unknown): value is 'private' | 'public
 export const POST: RequestHandler = async ({ request, locals }) => {
 	const db = getDB();
 
-	if (!locals.user) {
-		return json({ success: false, error: 'Authentication required' }, { status: 401 });
-	}
-
-	if (!isAdminUser(locals.user, process.env)) {
-		return json({ success: false, error: 'Admin access required' }, { status: 403 });
-	}
-
-	let payload: CreateUploadRequest;
 	try {
-		payload = (await request.json()) as CreateUploadRequest;
-	} catch {
-		return json({ success: false, error: 'Invalid JSON body' }, { status: 400 });
-	}
+		if (!locals.user) {
+			return json({ success: false, error: 'Authentication required' }, { status: 401 });
+		}
 
-	const title = payload.title?.trim();
-	const seriesIdentifier = payload.seriesId?.trim();
+		if (!isAdminUser(locals.user, process.env)) {
+			return json({ success: false, error: 'Admin access required' }, { status: 403 });
+		}
 
-	if (!title) {
-		return json({ success: false, error: 'Title is required' }, { status: 400 });
-	}
-	if (!seriesIdentifier) {
-		return json({ success: false, error: 'seriesId is required' }, { status: 400 });
-	}
-	if (!Number.isFinite(payload.fileSizeBytes) || payload.fileSizeBytes <= 0) {
-		return json({ success: false, error: 'fileSizeBytes must be a positive number' }, { status: 400 });
-	}
-	if (payload.fileSizeBytes > MAX_FILE_SIZE_BYTES) {
-		return json(
-			{
-				success: false,
-				error: `File too large. Maximum supported size is ${MAX_FILE_SIZE_BYTES} bytes (30GB).`,
-				maxFileSizeBytes: MAX_FILE_SIZE_BYTES
-			},
-			{ status: 400 }
-		);
-	}
-	if (payload.tier && !isSupportedTier(payload.tier)) {
-		return json({ success: false, error: 'Invalid tier value' }, { status: 400 });
-	}
-	if (payload.playbackPolicy && !isSupportedPlaybackPolicy(payload.playbackPolicy)) {
-		return json({ success: false, error: 'Invalid playbackPolicy value' }, { status: 400 });
-	}
+		let payload: CreateUploadRequest;
+		try {
+			payload = (await request.json()) as CreateUploadRequest;
+		} catch {
+			return json({ success: false, error: 'Invalid JSON body' }, { status: 400 });
+		}
 
-	const series = await getSeriesByIdentifier(db, seriesIdentifier);
-	if (!series) {
-		return json({ success: false, error: 'Series not found' }, { status: 404 });
-	}
+		const title = payload.title?.trim();
+		const seriesIdentifier = payload.seriesId?.trim();
 
-	// Legacy category field is still used by some UI. Default to series slug.
-	const category = payload.category?.trim() || series.slug;
+		if (!title) {
+			return json({ success: false, error: 'Title is required' }, { status: 400 });
+		}
+		if (!seriesIdentifier) {
+			return json({ success: false, error: 'seriesId is required' }, { status: 400 });
+		}
+		if (!Number.isFinite(payload.fileSizeBytes) || payload.fileSizeBytes <= 0) {
+			return json({ success: false, error: 'fileSizeBytes must be a positive number' }, { status: 400 });
+		}
+		if (payload.fileSizeBytes > MAX_FILE_SIZE_BYTES) {
+			return json(
+				{
+					success: false,
+					error: `File too large. Maximum supported size is ${MAX_FILE_SIZE_BYTES} bytes (30GB).`,
+					maxFileSizeBytes: MAX_FILE_SIZE_BYTES
+				},
+				{ status: 400 }
+			);
+		}
+		if (payload.tier && !isSupportedTier(payload.tier)) {
+			return json({ success: false, error: 'Invalid tier value' }, { status: 400 });
+		}
+		if (payload.playbackPolicy && !isSupportedPlaybackPolicy(payload.playbackPolicy)) {
+			return json({ success: false, error: 'Invalid playbackPolicy value' }, { status: 400 });
+		}
 
-	const reservation = await createVideoUploadReservation(db, {
-		title,
-		category,
-		description: payload.description,
-		episodeNumber: payload.episodeNumber,
-		tier: payload.tier,
-		seriesId: series.id,
-		playbackPolicy: payload.playbackPolicy ?? 'private',
-		ingestSource: 'upload',
-		sourceBytes: payload.fileSizeBytes,
-		durationSeconds: payload.maxDurationSeconds ?? null
-	});
+		const series = await getSeriesByIdentifier(db, seriesIdentifier);
+		if (!series) {
+			return json({ success: false, error: 'Series not found' }, { status: 404 });
+		}
 
-	try {
-		const directUpload = await createTusDirectUpload(process.env, {
-			uploadLength: payload.fileSizeBytes,
-			fileName: payload.fileName?.trim() || `${title}.mp4`,
-			creatorId: locals.user.id,
-			maxDurationSeconds: payload.maxDurationSeconds,
+		// Legacy category field is still used by some UI. Default to series slug.
+		const category = payload.category?.trim() || series.slug;
+
+		const reservation = await createVideoUploadReservation(db, {
+			title,
+			category,
+			description: payload.description,
+			episodeNumber: payload.episodeNumber,
+			tier: payload.tier,
+			seriesId: series.id,
 			playbackPolicy: payload.playbackPolicy ?? 'private',
-			meta: {
-				videoId: reservation.id,
-				category,
-				seriesId: series.id
-			}
+			ingestSource: 'upload',
+			sourceBytes: payload.fileSizeBytes,
+			durationSeconds: payload.maxDurationSeconds ?? null
 		});
 
-		await attachStreamUidToVideo(db, reservation.id, directUpload.streamUid);
+		try {
+			const directUpload = await createTusDirectUpload(process.env, {
+				uploadLength: payload.fileSizeBytes,
+				fileName: payload.fileName?.trim() || `${title}.mp4`,
+				creatorId: locals.user.id,
+				maxDurationSeconds: payload.maxDurationSeconds,
+				playbackPolicy: payload.playbackPolicy ?? 'private',
+				meta: {
+					videoId: reservation.id,
+					category,
+					seriesId: series.id
+				}
+			});
 
-		const response: CreateUploadResponse = {
-			videoId: reservation.id,
-			streamUid: directUpload.streamUid,
-			uploadUrl: directUpload.uploadUrl,
-			tusResumable: '1.0.0',
-			maxFileSizeBytes: MAX_FILE_SIZE_BYTES,
-			ingestStatus: 'pending_upload',
-			expiresAt: directUpload.expiresAt
-		};
+			await attachStreamUidToVideo(db, reservation.id, directUpload.streamUid);
 
-		return json({ success: true, data: response });
+			const response: CreateUploadResponse = {
+				videoId: reservation.id,
+				streamUid: directUpload.streamUid,
+				uploadUrl: directUpload.uploadUrl,
+				tusResumable: '1.0.0',
+				maxFileSizeBytes: MAX_FILE_SIZE_BYTES,
+				ingestStatus: 'pending_upload',
+				expiresAt: directUpload.expiresAt
+			};
+
+			return json({ success: true, data: response });
+		} catch (error) {
+			const reason = error instanceof Error ? error.message : 'Failed to initialize upload';
+			await markVideoUploadFailed(db, reservation.id, reason);
+			return json({ success: false, error: reason }, { status: 500 });
+		}
 	} catch (error) {
+		console.error('[uploads/init] Unhandled error:', error);
 		const reason = error instanceof Error ? error.message : 'Failed to initialize upload';
-		await markVideoUploadFailed(db, reservation.id, reason);
 		return json({ success: false, error: reason }, { status: 500 });
 	}
 };
-
