@@ -7,9 +7,38 @@
 	 */
 	import { Play, Pause, X, Maximize2, Volume2, VolumeX } from 'lucide-svelte';
 	import { videoPlayer } from '$lib/stores/videoPlayer';
+	import { onDestroy } from 'svelte';
+	import { attachVideoSource, type AttachedMediaSource } from '$lib/client/hls';
 
 	let videoElement: HTMLVideoElement | null = $state(null);
 	let progressPercent = $state(0);
+	let attachedSource = $state<AttachedMediaSource | null>(null);
+	let lastAppliedSrc = $state<string | null>(null);
+
+	async function applySource(nextSrc: string) {
+		if (!videoElement) return;
+		if (lastAppliedSrc === nextSrc) return;
+		lastAppliedSrc = nextSrc;
+
+		attachedSource?.destroy();
+		attachedSource = await attachVideoSource(videoElement, nextSrc);
+		videoElement.load();
+		if ($videoPlayer.isPlaying) {
+			videoElement.play().catch(() => {
+				// Autoplay blocked, user needs to interact
+			});
+		}
+	}
+
+	$effect(() => {
+		const nextSrc = $videoPlayer.activeVideo?.src;
+		if (!videoElement || !nextSrc) return;
+		void applySource(nextSrc);
+	});
+
+	onDestroy(() => {
+		attachedSource?.destroy();
+	});
 
 	// Sync video element with store state
 	$effect(() => {
@@ -69,7 +98,6 @@
 		<div class="mini-video-container">
 			<video
 				bind:this={videoElement}
-				src={$videoPlayer.activeVideo.src}
 				ontimeupdate={handleTimeUpdate}
 				onloadedmetadata={handleLoadedMetadata}
 				onended={() => videoPlayer.pause()}

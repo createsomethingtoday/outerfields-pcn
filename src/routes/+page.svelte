@@ -7,6 +7,7 @@
 	 */
 	import HeroSection from '$lib/components/HeroSection.svelte';
 	import JourneySection from '$lib/components/JourneySection.svelte';
+	import FeaturedVideos from '$lib/components/FeaturedVideos.svelte';
 	import ContentCategories from '$lib/components/ContentCategories.svelte';
 	import PCNPartners from '$lib/components/PCNPartners.svelte';
 	import Testimonials from '$lib/components/Testimonials.svelte';
@@ -194,25 +195,28 @@
 	<!-- 2. How Outerfields Works - Code + Media + Build + Sell = Unstoppable -->
 	<JourneySection />
 
-	<!-- 3. The Outerfields Network - Content showcase -->
+	<!-- 3. Sample Productions - Admin-curated featured grid -->
+	<FeaturedVideos />
+
+	<!-- 4. The Outerfields Network - Content showcase -->
 	<ContentCategories />
 
-	<!-- 4. PCN Partners - Social proof -->
+	<!-- 5. PCN Partners - Social proof -->
 	<PCNPartners />
 
-	<!-- 5. Client Reviews -->
+	<!-- 6. Client Reviews -->
 	<Testimonials />
 
-	<!-- 6. What's Included - Platform tools and features -->
+	<!-- 7. What's Included - Platform tools and features -->
 	<ComponentLab />
 
-	<!-- 7. Comprehensive Insights - Merged analytics dashboard + AI chat -->
+	<!-- 8. Comprehensive Insights - Merged analytics dashboard + AI chat -->
 	<InsightsAnalytics forceUnlocked />
 
-	<!-- 8. Stop Renting. Start Owning. - Competitive comparison -->
+	<!-- 9. Stop Renting. Start Owning. - Competitive comparison -->
 	<FeatureComparison />
 
-	<!-- 9. Investment - Pricing & CTA -->
+	<!-- 10. Investment - Pricing & CTA -->
 	<Pricing />
 </main>
 

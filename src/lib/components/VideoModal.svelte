@@ -19,8 +19,10 @@
 	 *   - Fetches and displays live aggregated data
 	 */
 	import { Play, Pause, X, Volume2, VolumeX, Minimize2, Maximize2 } from 'lucide-svelte';
+	import { onDestroy } from 'svelte';
 	import { videoPlayer } from '$lib/stores/videoPlayer';
 	import { engagementStats } from '$lib/stores/engagementStats';
+	import { attachVideoSource, type AttachedMediaSource } from '$lib/client/hls';
 
 	let videoElement: HTMLVideoElement | null = $state(null);
 	let playerContainer: HTMLDivElement | null = $state(null);
@@ -29,6 +31,8 @@
 	let engagementTooltipX = $state(0);
 	let engagementTooltipValue = $state(0);
 	let lastSeekTime = $state(0); // Track for replay detection
+	let attachedSource = $state<AttachedMediaSource | null>(null);
+	let lastAppliedSrc = $state<string | null>(null);
 
 	// Generate SVG path for engagement heatmap
 	function generateEngagementPath(data: number[]): string {
@@ -113,6 +117,30 @@
 			videoElement.volume = $videoPlayer.volume;
 			videoElement.muted = $videoPlayer.muted;
 		}
+	});
+
+	async function applySource(nextSrc: string) {
+		if (!videoElement) return;
+
+		if (lastAppliedSrc === nextSrc) return;
+		lastAppliedSrc = nextSrc;
+
+		attachedSource?.destroy();
+		attachedSource = await attachVideoSource(videoElement, nextSrc);
+		videoElement.load();
+		if ($videoPlayer.isPlaying) {
+			videoElement.play().catch(() => {});
+		}
+	}
+
+	$effect(() => {
+		const nextSrc = $videoPlayer.activeVideo?.src;
+		if (!videoElement || !nextSrc || $videoPlayer.mode === 'hidden') return;
+		void applySource(nextSrc);
+	});
+
+	onDestroy(() => {
+		attachedSource?.destroy();
 	});
 
 	function closePlayer() {
@@ -215,7 +243,6 @@
 				<div class="player-video">
 					<video
 						bind:this={videoElement}
-						src={$videoPlayer.activeVideo.src}
 						ontimeupdate={handleTimeUpdate}
 						onloadedmetadata={handleLoadedMetadata}
 						onended={() => videoPlayer.pause()}
@@ -318,56 +345,6 @@
 					<p class="player-description">{$videoPlayer.activeVideo.description}</p>
 				</div>
 			</div>
-		</div>
-	</div>
-{/if}
-
-{#if $videoPlayer.mode === 'mini' && $videoPlayer.activeVideo}
-	<div class="mini-player">
-		<div class="mini-player-video">
-			<video
-				bind:this={videoElement}
-				src={$videoPlayer.activeVideo.src}
-				ontimeupdate={handleTimeUpdate}
-				onloadedmetadata={handleLoadedMetadata}
-				onended={() => videoPlayer.pause()}
-				autoplay
-				playsinline
-				muted={$videoPlayer.muted}
-			>
-				<track kind="captions" />
-			</video>
-			<div class="mini-player-overlay">
-				<button
-					class="mini-control-button"
-					onclick={() => videoPlayer.togglePlay()}
-					aria-label={$videoPlayer.isPlaying ? 'Pause' : 'Play'}
-				>
-					{#if $videoPlayer.isPlaying}
-						<Pause size={20} />
-					{:else}
-						<Play size={20} />
-					{/if}
-				</button>
-			</div>
-		</div>
-		<div class="mini-player-info">
-			<span class="mini-player-title">{$videoPlayer.activeVideo.title}</span>
-			<div class="mini-player-actions">
-				<button
-					class="mini-action-button"
-					onclick={() => videoPlayer.maximize()}
-					aria-label="Expand video"
-				>
-					<Maximize2 size={16} />
-				</button>
-				<button class="mini-action-button" onclick={closePlayer} aria-label="Close video">
-					<X size={16} />
-				</button>
-			</div>
-		</div>
-		<div class="mini-progress-bar">
-			<div class="mini-progress-fill" style="width: {progressPercent}%"></div>
 		</div>
 	</div>
 {/if}

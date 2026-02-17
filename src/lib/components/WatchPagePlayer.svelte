@@ -24,6 +24,7 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { engagementStats } from '$lib/stores/engagementStats';
 	import { browser } from '$app/environment';
+	import { attachVideoSource, type AttachedMediaSource } from '$lib/client/hls';
 
 	interface Props {
 		videoId: string;
@@ -50,6 +51,8 @@
 	let loadError = $state(false);
 	let usedFallback = $state(false);
 	let effectiveSrc = $derived(usedFallback && fallbackSrc ? fallbackSrc : src);
+	let attachedSource = $state<AttachedMediaSource | null>(null);
+	let lastAppliedSrc = $state<string | null>(null);
 
 	// Player state
 	let videoElement: HTMLVideoElement | null = $state(null);
@@ -167,10 +170,6 @@
 		if (fallbackSrc && !usedFallback) {
 			usedFallback = true;
 			loadError = false;
-			if (videoElement) {
-				videoElement.src = fallbackSrc;
-				videoElement.load();
-			}
 		}
 	}
 
@@ -178,10 +177,6 @@
 		if (fallbackSrc && !usedFallback) {
 			usedFallback = true;
 			loadError = false;
-			if (videoElement) {
-				videoElement.src = fallbackSrc;
-				videoElement.load();
-			}
 		}
 	}
 
@@ -328,6 +323,7 @@
 			document.removeEventListener('keydown', handleKeydown);
 			document.removeEventListener('fullscreenchange', handleFullscreenChange);
 		}
+		attachedSource?.destroy();
 		// Flush any pending engagement events
 		engagementStats.flushEvents();
 	});
@@ -346,6 +342,26 @@
 		loadError = false;
 		usedFallback = false;
 	});
+
+	async function applySource(nextSrc: string) {
+		if (!videoElement) return;
+
+		if (lastAppliedSrc === nextSrc) return;
+		lastAppliedSrc = nextSrc;
+
+		attachedSource?.destroy();
+		attachedSource = await attachVideoSource(videoElement, nextSrc);
+		// Ensure the element treats the new source as active (esp. after switching fallback).
+		videoElement.load();
+		if (autoplay) {
+			videoElement.play().catch(() => {});
+		}
+	}
+
+	$effect(() => {
+		if (!videoElement) return;
+		void applySource(effectiveSrc);
+	});
 </script>
 
 <div
@@ -361,7 +377,6 @@
 	<!-- svelte-ignore a11y_media_has_caption -->
 	<video
 		bind:this={videoElement}
-		src={effectiveSrc}
 		poster={poster}
 		preload="metadata"
 		ontimeupdate={handleTimeUpdate}

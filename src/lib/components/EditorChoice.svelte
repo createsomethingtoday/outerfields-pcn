@@ -6,7 +6,6 @@
 	 */
 	import { Play, Info } from 'lucide-svelte';
 	import { onMount } from 'svelte';
-	import type { Video as DbVideo } from '$lib/server/db/videos';
 
 	// Cinematic background from Unsplash - dark moody film production aesthetic
 	const HERO_BG = 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=1920&q=80&auto=format&fit=crop';
@@ -31,33 +30,46 @@
 		return `${minutes}m`;
 	}
 
-	function getThumbnailPath(v: DbVideo): string {
-		if (v.thumbnail_path.startsWith('/thumbnails/')) {
-			return v.thumbnail_path;
+	function getThumbnailPath(thumbnailPath: string): string {
+		if (thumbnailPath.startsWith('/thumbnails/')) {
+			return thumbnailPath;
 		}
-		return `/thumbnails${v.thumbnail_path.startsWith('/') ? '' : '/'}${v.thumbnail_path}`;
+		return `/thumbnails${thumbnailPath.startsWith('/') ? '' : '/'}${thumbnailPath}`;
 	}
 
 	onMount(async () => {
 		try {
-			const response = await fetch('/api/videos?grouped=true');
-			const result = await response.json();
+			const response = await fetch('/api/v1/catalog/home');
+			const payload = (await response.json()) as unknown;
 
-			if (response.ok && result?.success) {
-				const grouped = result.data as Record<string, DbVideo[]>;
-				const films = grouped['films'];
+			const okPayload = payload as {
+				success?: boolean;
+				data?: { rows?: Array<{ series?: { slug?: string }; videos?: any[] }> };
+			};
 
-				if (films && films.length > 0) {
-					const featured = films[0];
-					film = {
-						id: featured.id,
-						title: featured.title,
-						description: featured.description || 'A cinematic experience from OUTERFIELDS.',
-						thumbnail: getThumbnailPath(featured),
-						duration: formatClock(featured.duration),
-						tier: featured.tier
-					};
-				}
+			if (!response.ok || !okPayload?.success) return;
+
+			const rows = okPayload.data?.rows || [];
+			const filmsRow = rows.find((row) => row.series?.slug === 'films');
+			const videos = (filmsRow?.videos || []) as Array<{
+				id: string;
+				title: string;
+				tier: 'free' | 'preview' | 'gated';
+				duration_seconds: number | null;
+				duration: number;
+				thumbnail_path: string;
+			}>;
+
+			if (videos.length > 0) {
+				const featured = videos[0];
+				film = {
+					id: featured.id,
+					title: featured.title,
+					description: 'A cinematic experience from OUTERFIELDS.',
+					thumbnail: getThumbnailPath(featured.thumbnail_path),
+					duration: formatClock(featured.duration_seconds ?? featured.duration),
+					tier: featured.tier
+				};
 			}
 		} catch (err) {
 			console.error('Failed to load featured film:', err);
