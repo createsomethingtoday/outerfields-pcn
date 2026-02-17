@@ -363,6 +363,7 @@
 		bind:this={videoElement}
 		src={effectiveSrc}
 		poster={poster}
+		preload="metadata"
 		ontimeupdate={handleTimeUpdate}
 		onloadedmetadata={handleLoadedMetadata}
 		onerror={handleVideoError}
@@ -598,13 +599,14 @@
 	}
 
 	.video-element {
+		position: absolute;
+		inset: 0;
 		width: 100%;
 		height: 100%;
-		max-width: 100%;
-		max-height: 100%;
+		display: block;
 		object-fit: contain;
-		vertical-align: middle;
 		cursor: pointer;
+		z-index: 0;
 	}
 
 	/* Video load error overlay */
@@ -619,7 +621,7 @@
 		color: var(--color-fg-primary);
 		text-align: center;
 		padding: 1.5rem;
-		z-index: 4;
+		z-index: 10;
 	}
 
 	.video-error-message {
