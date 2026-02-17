@@ -30,9 +30,10 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 		const sessions = getSessions();
 
 		// Find user in database
-		const result = await db.prepare(
-			'SELECT id, email, name, password_hash, membership, created_at FROM users WHERE email = ?'
-		)
+		const result = db
+			.prepare(
+				'SELECT id, email, name, password_hash, membership, created_at FROM users WHERE email = ?'
+			)
 			.bind(email)
 			.first<{
 				id: string;

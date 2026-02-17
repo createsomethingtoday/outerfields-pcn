@@ -1,7 +1,9 @@
 import { error } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
-import { getVideoById, getVideos } from '$lib/server/db/videos';
+import { getAdminVideoById, getVideoById, getVideos } from '$lib/server/db/videos';
 import { getDB } from '$lib/server/d1-compat';
+import { getSeriesByIdentifier } from '$lib/server/db/series';
+import { isAdminUser } from '$lib/server/admin';
 
 /**
  * Watch Page Server Load
@@ -18,12 +20,20 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		throw error(400, 'Video ID is required');
 	}
 
-	// Fetch the main video
-	const video = await getVideoById(db, id);
+	const isAdmin = isAdminUser(locals.user, process.env);
+
+	// Fetch the main video (admins can preview drafts/archived)
+	const video = isAdmin ? await getAdminVideoById(db, id) : await getVideoById(db, id);
 
 	if (!video) {
 		throw error(404, 'Video not found');
 	}
+
+	if (!isAdmin && video.visibility !== 'published') {
+		throw error(404, 'Video not found');
+	}
+
+	const series = video.series_id ? await getSeriesByIdentifier(db, video.series_id) : null;
 
 	// Fetch related videos (same category, excluding current)
 	const { videos: allVideos } = await getVideos(db);
@@ -57,7 +67,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 	const isMember = user?.membership ?? false;
 
 	// Determine if video is accessible
-	const isAccessible = video.tier === 'free' || isMember;
+	const isAccessible = isAdmin || video.tier === 'free' || isMember;
 
 	return {
 		video,
@@ -69,6 +79,14 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		},
 		isAccessible,
 		isMember,
-		user
+		user,
+		isAdmin,
+		series: series
+			? {
+					id: series.id,
+					slug: series.slug,
+					title: series.title
+				}
+			: null
 	};
 };
