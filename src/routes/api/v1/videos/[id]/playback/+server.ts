@@ -11,12 +11,14 @@ import {
 	getStreamCustomerCode
 } from '$lib/server/stream';
 import type { VideoPlaybackGrant } from '$lib/types/video-pipeline';
+import { resolveRuntimeEnv } from '$lib/server/env';
 
 /**
  * GET /api/v1/videos/:id/playback
  * Returns a short-lived playback grant for Stream-backed videos (with legacy fallback).
  */
-export const GET: RequestHandler = async ({ params, locals }) => {
+export const GET: RequestHandler = async ({ params, locals, platform }) => {
+	const runtimeEnv = resolveRuntimeEnv(((platform as { env?: Record<string, string | undefined> } | undefined)?.env));
 	const db = getDB();
 
 	const videoId = params.id;
@@ -24,7 +26,7 @@ export const GET: RequestHandler = async ({ params, locals }) => {
 		return json({ success: false, error: 'Video ID is required' }, { status: 400 });
 	}
 
-	const isAdmin = isAdminUser(locals.user, process.env);
+	const isAdmin = isAdminUser(locals.user, runtimeEnv);
 	const video = isAdmin ? await getAdminVideoById(db, videoId) : await getVideoById(db, videoId);
 
 	if (!video) {
@@ -72,16 +74,16 @@ export const GET: RequestHandler = async ({ params, locals }) => {
 	}
 
 	try {
-		const customerCode = getStreamCustomerCode(process.env);
+		const customerCode = getStreamCustomerCode(runtimeEnv);
 		const issuedAt = Math.floor(Date.now() / 1000);
-		const expiresAt = issuedAt + getPlaybackTokenTtlSeconds(process.env);
+		const expiresAt = issuedAt + getPlaybackTokenTtlSeconds(runtimeEnv);
 
 		const hlsUrl =
 			video.playback_policy === 'public'
 				? buildPublicHlsUrl(customerCode, video.stream_uid)
 				: buildSignedHlsUrl(
 						customerCode,
-						(await createStreamPlaybackToken(process.env, video.stream_uid, expiresAt)).token
+						(await createStreamPlaybackToken(runtimeEnv, video.stream_uid, expiresAt)).token
 					);
 
 		const grant: VideoPlaybackGrant = {
@@ -104,4 +106,3 @@ export const GET: RequestHandler = async ({ params, locals }) => {
 		);
 	}
 };
-

@@ -3,6 +3,7 @@ import type { RequestHandler } from './$types';
 import { getDB } from '$lib/server/d1-compat';
 import { applyStreamWebhookUpdate } from '$lib/server/db/videos';
 import { type StreamWebhookPayload, verifyStreamWebhookSignature } from '$lib/server/stream';
+import { resolveRuntimeEnv } from '$lib/server/env';
 
 function normalizeState(payload: StreamWebhookPayload): 'processing' | 'ready' | 'failed' {
 	const state = payload.status?.state?.toLowerCase();
@@ -22,9 +23,10 @@ function normalizeState(payload: StreamWebhookPayload): 'processing' | 'ready' |
  * POST /api/v1/webhooks/stream
  * Handles Cloudflare Stream lifecycle updates.
  */
-export const POST: RequestHandler = async ({ request }) => {
+export const POST: RequestHandler = async ({ request, platform }) => {
+	const runtimeEnv = resolveRuntimeEnv(((platform as { env?: Record<string, string | undefined> } | undefined)?.env));
 	const db = getDB();
-	if (!process.env.CLOUDFLARE_STREAM_WEBHOOK_SECRET) {
+	if (!runtimeEnv.CLOUDFLARE_STREAM_WEBHOOK_SECRET) {
 		return json({ success: false, error: 'Webhook secret is not configured' }, { status: 500 });
 	}
 
@@ -33,7 +35,7 @@ export const POST: RequestHandler = async ({ request }) => {
 	const isValid = await verifyStreamWebhookSignature(
 		signatureHeader,
 		rawBody,
-		process.env.CLOUDFLARE_STREAM_WEBHOOK_SECRET
+		runtimeEnv.CLOUDFLARE_STREAM_WEBHOOK_SECRET
 	);
 
 	if (!isValid) {
@@ -75,4 +77,3 @@ export const POST: RequestHandler = async ({ request }) => {
 		}
 	});
 };
-

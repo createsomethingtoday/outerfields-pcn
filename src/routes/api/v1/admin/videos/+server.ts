@@ -3,6 +3,7 @@ import type { RequestHandler } from './$types';
 import { isAdminUser } from '$lib/server/admin';
 import { getDB } from '$lib/server/d1-compat';
 import { listAdminVideos, type VideoIngestStatus, type VideoVisibility } from '$lib/server/db/videos';
+import { resolveRuntimeEnv } from '$lib/server/env';
 
 function normalizeVisibility(value: string | null): VideoVisibility | 'all' | undefined {
 	if (!value) return undefined;
@@ -22,11 +23,12 @@ function normalizeIngestStatus(value: string | null): VideoIngestStatus | 'all' 
  * GET /api/v1/admin/videos
  * Admin-only listing endpoint with basic filters.
  */
-export const GET: RequestHandler = async ({ locals, url }) => {
+export const GET: RequestHandler = async ({ locals, url, platform }) => {
+	const runtimeEnv = resolveRuntimeEnv(((platform as { env?: Record<string, string | undefined> } | undefined)?.env));
 	const db = getDB();
 
 	if (!locals.user) return json({ success: false, error: 'Authentication required' }, { status: 401 });
-	if (!isAdminUser(locals.user, process.env)) {
+	if (!isAdminUser(locals.user, runtimeEnv)) {
 		return json({ success: false, error: 'Admin access required' }, { status: 403 });
 	}
 
@@ -63,4 +65,3 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 		data: result
 	});
 };
-

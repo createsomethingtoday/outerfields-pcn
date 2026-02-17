@@ -3,6 +3,7 @@ import type { RequestHandler } from './$types';
 import { markVideoUploadCompleted } from '$lib/server/db/videos';
 import { isAdminUser } from '$lib/server/admin';
 import { getDB } from '$lib/server/d1-compat';
+import { resolveRuntimeEnv } from '$lib/server/env';
 
 interface CompleteUploadRequest {
 	videoId: string;
@@ -12,14 +13,15 @@ interface CompleteUploadRequest {
  * POST /api/v1/uploads/complete
  * Marks an upload as complete from the client side.
  */
-export const POST: RequestHandler = async ({ request, locals }) => {
+export const POST: RequestHandler = async ({ request, locals, platform }) => {
+	const runtimeEnv = resolveRuntimeEnv(((platform as { env?: Record<string, string | undefined> } | undefined)?.env));
 	const db = getDB();
 
 	if (!locals.user) {
 		return json({ success: false, error: 'Authentication required' }, { status: 401 });
 	}
 
-	if (!isAdminUser(locals.user, process.env)) {
+	if (!isAdminUser(locals.user, runtimeEnv)) {
 		return json({ success: false, error: 'Admin access required' }, { status: 403 });
 	}
 
@@ -49,4 +51,3 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		}
 	});
 };
-

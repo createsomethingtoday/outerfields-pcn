@@ -3,6 +3,7 @@ import type { RequestHandler } from './$types';
 import { isAdminUser } from '$lib/server/admin';
 import { getDB } from '$lib/server/d1-compat';
 import { getAdminVideoById, type VideoPlaybackPolicy, type VideoVisibility } from '$lib/server/db/videos';
+import { resolveRuntimeEnv } from '$lib/server/env';
 
 function nowSeconds(): number {
 	return Math.floor(Date.now() / 1000);
@@ -26,11 +27,12 @@ function normalizePlaybackPolicy(value: unknown): VideoPlaybackPolicy | null {
 /**
  * GET /api/v1/admin/videos/:id
  */
-export const GET: RequestHandler = async ({ locals, params }) => {
+export const GET: RequestHandler = async ({ locals, params, platform }) => {
+	const runtimeEnv = resolveRuntimeEnv(((platform as { env?: Record<string, string | undefined> } | undefined)?.env));
 	const db = getDB();
 
 	if (!locals.user) return json({ success: false, error: 'Authentication required' }, { status: 401 });
-	if (!isAdminUser(locals.user, process.env)) {
+	if (!isAdminUser(locals.user, runtimeEnv)) {
 		return json({ success: false, error: 'Admin access required' }, { status: 403 });
 	}
 
@@ -46,11 +48,12 @@ export const GET: RequestHandler = async ({ locals, params }) => {
 /**
  * PATCH /api/v1/admin/videos/:id
  */
-export const PATCH: RequestHandler = async ({ locals, params, request }) => {
+export const PATCH: RequestHandler = async ({ locals, params, request, platform }) => {
+	const runtimeEnv = resolveRuntimeEnv(((platform as { env?: Record<string, string | undefined> } | undefined)?.env));
 	const db = getDB();
 
 	if (!locals.user) return json({ success: false, error: 'Authentication required' }, { status: 401 });
-	if (!isAdminUser(locals.user, process.env)) {
+	if (!isAdminUser(locals.user, runtimeEnv)) {
 		return json({ success: false, error: 'Admin access required' }, { status: 403 });
 	}
 
@@ -229,11 +232,12 @@ export const PATCH: RequestHandler = async ({ locals, params, request }) => {
  * DELETE /api/v1/admin/videos/:id
  * Soft-archives the video (does not delete from Stream).
  */
-export const DELETE: RequestHandler = async ({ locals, params }) => {
+export const DELETE: RequestHandler = async ({ locals, params, platform }) => {
+	const runtimeEnv = resolveRuntimeEnv(((platform as { env?: Record<string, string | undefined> } | undefined)?.env));
 	const db = getDB();
 
 	if (!locals.user) return json({ success: false, error: 'Authentication required' }, { status: 401 });
-	if (!isAdminUser(locals.user, process.env)) {
+	if (!isAdminUser(locals.user, runtimeEnv)) {
 		return json({ success: false, error: 'Admin access required' }, { status: 403 });
 	}
 
@@ -258,4 +262,3 @@ export const DELETE: RequestHandler = async ({ locals, params }) => {
 	const updated = await getAdminVideoById(db, existing.id);
 	return json({ success: true, data: updated ?? existing });
 };
-

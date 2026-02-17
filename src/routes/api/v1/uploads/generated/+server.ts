@@ -4,6 +4,7 @@ import { createGeneratedVideo } from '$lib/server/db/videos';
 import { upsertSeries } from '$lib/server/db/series';
 import { isAdminUser } from '$lib/server/admin';
 import { getDB } from '$lib/server/d1-compat';
+import { resolveRuntimeEnv } from '$lib/server/env';
 
 interface GeneratedIngestRequest {
 	title: string;
@@ -31,11 +32,12 @@ function hasValidIngestToken(request: Request, token?: string): boolean {
  * POST /api/v1/uploads/generated
  * Registers generated videos against the same ingest table/fields as creator uploads.
  */
-export const POST: RequestHandler = async ({ request, locals }) => {
+export const POST: RequestHandler = async ({ request, locals, platform }) => {
 	const db = getDB();
+	const runtimeEnv = resolveRuntimeEnv(((platform as { env?: Record<string, string | undefined> } | undefined)?.env));
 
 	const authorized =
-		isAdminUser(locals.user, process.env) || hasValidIngestToken(request, process.env.VIDEO_INGEST_API_TOKEN);
+		isAdminUser(locals.user, runtimeEnv) || hasValidIngestToken(request, runtimeEnv.VIDEO_INGEST_API_TOKEN);
 	if (!authorized) {
 		return json({ success: false, error: 'Authentication required' }, { status: 401 });
 	}
@@ -91,4 +93,3 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		}
 	});
 };
-

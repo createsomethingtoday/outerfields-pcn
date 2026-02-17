@@ -4,6 +4,7 @@ import { getAdminVideoById, getVideoById, getVideos } from '$lib/server/db/video
 import { getDB } from '$lib/server/d1-compat';
 import { getSeriesByIdentifier } from '$lib/server/db/series';
 import { isAdminUser } from '$lib/server/admin';
+import { resolveRuntimeEnv } from '$lib/server/env';
 
 /**
  * Watch Page Server Load
@@ -11,8 +12,9 @@ import { isAdminUser } from '$lib/server/admin';
  * Fetches video data and related videos for the dedicated watch page.
  * Handles 404 for invalid video IDs and respects tier gating.
  */
-export const load: PageServerLoad = async ({ params, locals }) => {
+export const load: PageServerLoad = async ({ params, locals, platform }) => {
 	const db = getDB();
+	const runtimeEnv = resolveRuntimeEnv(((platform as { env?: Record<string, string | undefined> } | undefined)?.env));
 
 	const { id } = params;
 
@@ -20,7 +22,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		throw error(400, 'Video ID is required');
 	}
 
-	const isAdmin = isAdminUser(locals.user, process.env);
+	const isAdmin = isAdminUser(locals.user, runtimeEnv);
 
 	// Fetch the main video (admins can preview drafts/archived)
 	const video = isAdmin ? await getAdminVideoById(db, id) : await getVideoById(db, id);

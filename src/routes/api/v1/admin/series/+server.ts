@@ -3,6 +3,7 @@ import type { RequestHandler } from './$types';
 import { isAdminUser } from '$lib/server/admin';
 import { getDB } from '$lib/server/d1-compat';
 import { createSeries, listAdminSeries, updateSeriesHomeConfig } from '$lib/server/db/series';
+import { resolveRuntimeEnv } from '$lib/server/env';
 
 interface CreateSeriesRequest {
 	slug: string;
@@ -23,11 +24,12 @@ function parseSortOrder(value: unknown): number | null {
  * GET /api/v1/admin/series
  * Lists all series (admin-only).
  */
-export const GET: RequestHandler = async ({ locals }) => {
+export const GET: RequestHandler = async ({ locals, platform }) => {
+	const runtimeEnv = resolveRuntimeEnv(((platform as { env?: Record<string, string | undefined> } | undefined)?.env));
 	const db = getDB();
 
 	if (!locals.user) return json({ success: false, error: 'Authentication required' }, { status: 401 });
-	if (!isAdminUser(locals.user, process.env)) {
+	if (!isAdminUser(locals.user, runtimeEnv)) {
 		return json({ success: false, error: 'Admin access required' }, { status: 403 });
 	}
 
@@ -39,11 +41,12 @@ export const GET: RequestHandler = async ({ locals }) => {
  * POST /api/v1/admin/series
  * Creates a new series (admin-only).
  */
-export const POST: RequestHandler = async ({ locals, request }) => {
+export const POST: RequestHandler = async ({ locals, request, platform }) => {
+	const runtimeEnv = resolveRuntimeEnv(((platform as { env?: Record<string, string | undefined> } | undefined)?.env));
 	const db = getDB();
 
 	if (!locals.user) return json({ success: false, error: 'Authentication required' }, { status: 401 });
-	if (!isAdminUser(locals.user, process.env)) {
+	if (!isAdminUser(locals.user, runtimeEnv)) {
 		return json({ success: false, error: 'Admin access required' }, { status: 403 });
 	}
 
@@ -86,4 +89,3 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 		);
 	}
 };
-

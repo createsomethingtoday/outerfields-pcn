@@ -10,6 +10,7 @@ import { isAdminUser } from '$lib/server/admin';
 import { createTusDirectUpload, getMaxDirectUploadBytes } from '$lib/server/stream';
 import type { CreateUploadRequest, CreateUploadResponse } from '$lib/types/video-pipeline';
 import { getDB } from '$lib/server/d1-compat';
+import { resolveRuntimeEnv } from '$lib/server/env';
 
 const MAX_FILE_SIZE_BYTES = getMaxDirectUploadBytes();
 
@@ -25,15 +26,16 @@ function isSupportedPlaybackPolicy(value: unknown): value is 'private' | 'public
  * POST /api/v1/uploads/init
  * Creates a reserved video row and a Cloudflare Stream tus direct upload URL.
  */
-export const POST: RequestHandler = async ({ request, locals }) => {
+export const POST: RequestHandler = async ({ request, locals, platform }) => {
 	const db = getDB();
+	const runtimeEnv = resolveRuntimeEnv(((platform as { env?: Record<string, string | undefined> } | undefined)?.env));
 
 	try {
 		if (!locals.user) {
 			return json({ success: false, error: 'Authentication required' }, { status: 401 });
 		}
 
-		if (!isAdminUser(locals.user, process.env)) {
+		if (!isAdminUser(locals.user, runtimeEnv)) {
 			return json({ success: false, error: 'Admin access required' }, { status: 403 });
 		}
 
@@ -95,7 +97,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		});
 
 		try {
-			const directUpload = await createTusDirectUpload(process.env, {
+			const directUpload = await createTusDirectUpload(runtimeEnv, {
 				uploadLength: payload.fileSizeBytes,
 				fileName: payload.fileName?.trim() || `${title}.mp4`,
 				creatorId: locals.user.id,
