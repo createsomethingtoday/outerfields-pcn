@@ -15,13 +15,15 @@ async function hashPassword(password: string): Promise<string> {
 export const POST: RequestHandler = async ({ request, cookies }) => {
 	try {
 		const body = await request.json();
-		const { email, password, name } = body;
+		const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
+		const password = typeof body.password === 'string' ? body.password : '';
+		const name = typeof body.name === 'string' ? body.name : '';
 
 		if (!email || !password) {
 			return json({ success: false, error: 'Email and password are required' }, { status: 400 });
 		}
 
-		if (!name || typeof name !== 'string' || name.trim().length === 0) {
+		if (!name || name.trim().length === 0) {
 			return json({ success: false, error: 'Name is required' }, { status: 400 });
 		}
 
@@ -29,7 +31,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 		const sessions = getSessions();
 
 		// Prevent duplicate accounts
-		const existing = await db.prepare('SELECT id FROM users WHERE email = ?')
+		const existing = await db.prepare('SELECT id FROM users WHERE lower(email) = ?')
 			.bind(email)
 			.first<{ id: string }>();
 		if (existing) {

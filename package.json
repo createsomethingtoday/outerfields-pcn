@@ -7,6 +7,7 @@
     "build": "vite build",
     "db:check": "npx tsx scripts/check-db-connection.ts",
     "db:push": "npx tsx scripts/push-sqlite-to-postgres.ts",
+    "user:create": "npx tsx scripts/create-user.ts",
     "preview": "vite preview --host",
     "start": "node build/index.js",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
