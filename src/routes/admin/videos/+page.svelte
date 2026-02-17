@@ -55,6 +55,13 @@
 		featured_order: number;
 	};
 
+	type UploadInitJson = {
+		success?: boolean;
+		data?: { videoId: string; uploadUrl: string; tusResumable: string };
+		error?: string;
+		message?: string;
+	};
+
 	let drafts = $state<Record<string, EditDraft>>({});
 
 	function ensureDraft(video: VideoRow) {
@@ -244,17 +251,25 @@
 				})
 			});
 
-			const initJson = (await initRes.json()) as unknown as {
-				success?: boolean;
-				data?: { videoId: string; uploadUrl: string; tusResumable: string };
-				error?: string;
-			};
-
-			if (!initRes.ok || !initJson?.success || !initJson.data) {
-				throw new Error(initJson?.error || 'Failed to initialize upload');
+			const initRaw = await initRes.text();
+			let initJson: UploadInitJson | null = null;
+			try {
+				initJson = JSON.parse(initRaw) as UploadInitJson;
+			} catch {
+				initJson = null;
 			}
 
-			uploadVideoId = initJson.data.videoId;
+			const initData = initJson?.data;
+			if (!initRes.ok || !initJson?.success || !initData) {
+				const message =
+					initJson?.error ||
+					initJson?.message ||
+					(initRaw?.trim() ? initRaw.trim() : null) ||
+					`Failed to initialize upload (${initRes.status})`;
+				throw new Error(message);
+			}
+
+			uploadVideoId = initData.videoId;
 			uploadMessage = 'Uploading…';
 
 			const tusMod = (await import('tus-js-client')) as unknown as {
@@ -268,7 +283,7 @@
 
 			await new Promise<void>((resolve, reject) => {
 				const upload = new TusUpload(uploadFile as File, {
-					uploadUrl: initJson.data!.uploadUrl,
+					uploadUrl: initData.uploadUrl,
 					chunkSize: 5 * 1024 * 1024,
 					retryDelays: [0, 1000, 3000, 5000],
 					onError: (error: Error) => reject(error),
