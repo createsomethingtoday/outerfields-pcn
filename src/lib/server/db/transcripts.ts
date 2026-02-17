@@ -48,7 +48,7 @@ export async function getTranscript(db: D1Compat, videoId: string): Promise<Tran
  */
 export async function hasTranscript(db: D1Compat, videoId: string): Promise<boolean> {
 	const result = db
-		.prepare('SELECT 1 FROM transcripts WHERE video_id = ? LIMIT 1')
+		.prepare('SELECT 1 FROM transcripts WHERE video_id = ?')
 		.bind(videoId)
 		.first();
 
