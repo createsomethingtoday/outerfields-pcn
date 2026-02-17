@@ -58,7 +58,7 @@ export async function listAdminSeries(db: D1Compat): Promise<Series[]> {
 
 export async function getSeriesByIdentifier(db: D1Compat, identifier: string): Promise<Series | null> {
 	const series = db
-		.prepare('SELECT * FROM series WHERE id = ? OR slug = ? LIMIT 1')
+		.prepare('SELECT * FROM series WHERE id = ? OR slug = ?')
 		.bind(identifier, identifier)
 		.first<Series>();
 	return series || null;
@@ -179,4 +179,3 @@ export async function updateSeriesHomeConfig(
 
 	return getSeriesByIdentifier(db, seriesId);
 }
-
